@@ -13,8 +13,9 @@
 | FR-001 | Role workspace layout | Session/me and role queue | User, Role | Authorized user sees role workspace | Technical lead | Ready for gap check |
 | FR-002 | Role-specific actions | Authorization on every command/query | Role, Permission | Cross-role negative tests | Technical lead | Blocked: permission matrix approval |
 | FR-003 | Demo role selector notice | None; prototype only | None | Production build has no security reliance on switcher | Technical lead | Ready for gap check |
-| FR-004 | Login and administration | Authentication and user/role administration | User, Role | Login, logout, disabled user, role change | Technical lead | Blocked: identity provider/process |
+| FR-004 | Login and administration | PostgreSQL-backed authentication and user/role administration | User profile, Auth account, Auth session, Role | Register, login, session, logout, disabled user, role change | Technical lead | Authentication complete; role administration pending |
 | FR-005 | Timeline/activity | All workflow commands | Audit event, User | Actor is retained for each important action | Operations representative | Ready for gap check |
+| FR-006 | Login and registration | `/api/v1/auth/register` and `/api/v1/auth/login` | User profile, Auth account, Auth session | Real register/login pass; registration cannot self-assign a role | Technical lead | Complete |
 | FR-010 | Create order | Create draft | Order | CSR creates a draft | Operations representative | Ready for gap check |
 | FR-011 | CSR dashboard/order form | Get and update draft | Order | CSR resumes and edits draft | Operations representative | Ready for gap check |
 | FR-012 | Create order form | Create/update draft | Order, Attachment | Approved fields persist correctly | Business owner | Blocked: final field approval |
@@ -87,7 +88,7 @@
 | NFR-002 | Queue/detail performance test | Blocked: load and response target pending |
 | NFR-003 | Desktop/tablet viewport checks | Partial: tablet widths and mobile need pending |
 | NFR-004 | Keyboard, focus, labels, contrast, status-label checks | Ready for gap check |
-| NFR-005 | Authentication and server authorization tests | Blocked: identity choice pending |
+| NFR-005 | Authentication and server authorization tests | Authentication complete; workflow authorization pending permission approval |
 | NFR-006 | Record/action access tests | Blocked: access policy pending |
 | NFR-007 | Audit immutability and unauthorized update tests | Ready for design proof |
 | NFR-008 | Attachment type/size/access tests | Blocked: limits/storage pending |
@@ -111,7 +112,7 @@ All entries originate in BRD Section 19. Owners are accountable approval roles f
 | D-07 | QA as stage or Press responsibility | Business owner | Pending | Status model and completion gate |
 | D-08 | SLAs, calendars, escalation rules | Operations representative | Pending | Manager risks and notifications |
 | D-09 | Standalone/manual or required integrations | Business owner | Pending | Integration scope |
-| D-10 | Authentication provider and user administration | Technical lead | Pending | Production access |
+| D-10 | PostgreSQL-backed email/password authentication; detailed user administration | Technical lead | Authentication selected and implemented; administration pending | Role administration only |
 | D-11 | File limits and document/audit retention | Business owner | Pending | Attachments and retention |
 | D-12 | Mobile requirement for Press/Shipping | Operations representative | Pending | Responsive scope |
 | D-13 | Notification channels | Business owner | Pending | Notification delivery design |

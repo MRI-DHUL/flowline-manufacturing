@@ -4,7 +4,7 @@
 
 | BRD screen | Proposed route/surface | Reusable building blocks | Status |
 |---|---|---|---|
-| 1. Login / demo role selector | `/login`; production login follows the BRD, while the demo selector remains prototype-only | Auth form, prototype role control | Authentication blocked by D-10 |
+| 1. Login / registration | `/login` and `/register`; the demo role selector remains prototype-only | Shared auth layout, validated fields, password visibility control | Complete; pending accounts await administrator role assignment |
 | 2. CSR dashboard | `/orders` with CSR workspace | App shell, queue, filters, status/age labels | Ready for gap check |
 | 3. Create new order | `/orders/new` and draft edit route | Order form sections, validation summary, attachment control | Fields blocked by D-02/D-11 |
 | 4. R&D work queue | `/orders` with R&D workspace | Shared queue, priority/age indicators | Ready for gap check |

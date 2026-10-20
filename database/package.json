@@ -1,0 +1,25 @@
+{
+  "name": "@flowline/database",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "migrate": "tsx src/migrate.ts up",
+    "migrate:status": "tsx src/migrate.ts status",
+    "health": "tsx src/health.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3",
+    "pino": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "tsx": "^4.20.6",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

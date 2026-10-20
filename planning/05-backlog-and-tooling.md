@@ -6,7 +6,7 @@ Priority follows the BRD. Stories with unresolved decisions cannot enter impleme
 
 | Order | Epic/story | BRD references | Acceptance summary | Status |
 |---|---|---|---|---|
-| 1 | Production identity and authorization | FR-001-005, BR-010/011, NFR-005/006 | Authenticated users receive only permitted records/actions; demo switcher grants no access | Blocked by D-01/D-03/D-10 |
+| 1 | Production identity and authorization | FR-001-006, BR-010/011, NFR-005/006 | Login/registration validate input, registration cannot self-assign roles, and authenticated users receive only permitted records/actions | Authentication complete; role authorization blocked by D-01/D-03 |
 | 2 | Order draft and submission | FR-010-017, BR-001-003 | CSR creates/resumes a validated draft, attaches approved files, submits to R&D | Blocked by D-02/D-11 |
 | 3 | Unified order detail and audit timeline | FR-060-065, BR-003/007/009 | Permitted users see current state, owner, next action, documents, immutable history | Partial; D-11/access policy |
 | 4 | R&D queue and feasibility | FR-020-024 | R&D reviews context and records an auditable allowed decision; Planning gate enforced | Partial; D-03/D-04 |
@@ -38,13 +38,13 @@ Before scaffolding, the technical lead must record:
 
 | Decision | Status |
 |---|---|
-| Runtime and framework versions | Pending |
-| Package manager and workspace structure | Pending |
-| Node.js API framework | Pending |
-| PostgreSQL migration/data-access approach | Pending |
-| Unit, component, API, and browser test tools | Pending |
-| Lint, format, and type-check tools | Pending |
-| Authentication provider | Pending D-10 |
+| Runtime and frontend framework versions | Selected for frontend: Node 24, React 19, TypeScript 6, Vite 8, Tailwind CSS 4 |
+| Package manager and frontend structure | Selected for frontend: npm and feature-based `src/` modules |
+| Node.js API framework | Selected: Fastify 5 with Zod validation |
+| PostgreSQL migration/data-access approach | Selected: ordered SQL migrations and parameterized `pg` access |
+| Unit and browser test tools | Selected: Vitest, Testing Library, Fastify injection, and Playwright validation |
+| Lint, format, and type-check tools | ESLint and TypeScript selected for frontend; formatting tool pending |
+| Authentication provider | Selected: Flowline backend with PostgreSQL, Argon2id, and HTTP-only sessions |
 | Attachment storage | Pending D-11 |
 | Frontend/backend hosting and CI | Pending |
 

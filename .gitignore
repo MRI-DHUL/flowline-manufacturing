@@ -1,0 +1,24 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Dependencies and generated output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Logs and local runtime files
+*.log
+logs/
+*.pid
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Local database tooling
+.pglite/

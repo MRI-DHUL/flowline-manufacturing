@@ -3,7 +3,7 @@
 ## API Rules
 
 - Base path proposal: `/api/v1`.
-- Production requests require authenticated identity; provider remains D-10.
+- Production requests use PostgreSQL-backed identities and HTTP-only sessions as resolved in D-10.
 - List/detail queries and every command are authorized on the server.
 - Commands validate the current state and approved stage gate in one transaction.
 - Successful workflow commands append an audit event atomically.
@@ -14,7 +14,10 @@
 
 | Method and path | Purpose | Authorized audience |
 |---|---|---|
-| `GET /session` | Current identity and permissions | Authenticated user |
+| `POST /api/v1/auth/register` | Create a pending account without role assignment | Public |
+| `POST /api/v1/auth/login` | Verify credentials and create an HTTP-only session | Public |
+| `GET /api/v1/auth/session` | Current authenticated identity/status | Authenticated user |
+| `POST /api/v1/auth/logout` | Revoke the current session | Authenticated user |
 | `GET /orders` | Role-permitted queue, search, filters | All operational roles/Manager |
 | `POST /orders` | Create draft | CSR |
 | `GET /orders/:orderId` | Unified detail | Permitted roles |
@@ -49,9 +52,11 @@ Paths and payload schemas are technical proposals, not new business scope. OpenA
 
 | Entity | Purpose | Key relationships/invariants |
 |---|---|---|
-| `users` | Production identities | Identity-provider key; active state |
+| `user_profiles` | Production identities | Unique normalized email and account state |
+| `auth_accounts` | Credential records | Argon2id hash only; failed-attempt lock state |
+| `auth_sessions` | Server-side sessions | SHA-256 token hash, expiry, revocation; raw token only in HTTP-only cookie |
 | `roles` | Approved application roles | Unique role code |
-| `user_roles` | Role assignment | User-to-role; administration pending D-10 |
+| `user_roles` | Role assignment | User-to-role; self-assignment is prohibited and administration remains pending |
 | `orders` | Shared order record/current workflow state | Unique order number; current stage/status/owner; concurrency version |
 | `order_revisions` | Approved order-data revisions | Belongs to order; revision policy pending |
 | `technical_reviews` | R&D decisions/evidence references | Belongs to order and reviewer |

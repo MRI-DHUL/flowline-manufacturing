@@ -332,6 +332,15 @@ confirmed.
                           the acting user for     
                           important workflow      
                           decisions and updates.  
+
+    FR-006                  The application shall   Must
+                                                    provide login and       
+                                                    account registration    
+                                                    pages. Registration     
+                                                    shall not allow users   
+                                                    to assign themselves    
+                                                    operational or          
+                                                    administrative roles.   
   -----------------------------------------------------------------------
 
 ### 8.2 Order Creation and CSR Management
@@ -1060,7 +1069,7 @@ demonstrate that:
 ## 19. Decisions Required Before Production Implementation
 
 The following decisions are open and must be recorded by the business
-owner:
+owner, except item 10 which was resolved on 20 October 2026:
 
 1.  Are Requestor and CSR the same role?
 2.  What fields and documents are mandatory for every order type?
@@ -1075,8 +1084,10 @@ owner:
 8.  What are the stage SLAs, working calendars, and escalation rules?
 9.  Will the first production release be standalone/manual, or must it
     integrate with ERP/MRP, inventory, or shipping systems?
-10. What authentication provider and user-administration process will be
-    used?
+10. **Resolved:** Use Flowline's Node.js backend with PostgreSQL-backed
+    email/password accounts, Argon2id password hashes, hashed session
+    tokens, and HTTP-only session cookies. Users cannot self-assign
+    roles; the detailed administration process remains to be approved.
 11. What are the file type/size limits, document retention rules, and
     audit retention period?
 12. Is mobile support required for Press and Shipping?
