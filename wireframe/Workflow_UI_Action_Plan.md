@@ -12,6 +12,12 @@
 | Status | Approved and implemented as a client demonstration prototype |
 | Output folder | `5star flow` |
 
+> **Current implementation usage:** This document records the historical
+> prototype. It is not a production UI blueprint. Production functionality
+> and workflow follow `../Flowline_Manufacturing_BRD.md`. Consult this
+> wireframe only when the user requests a specific visual element, and reuse
+> only that element rather than recreating a full screen or layout.
+
 ## 1. Purpose
 
 This document defines the proposed action plan, workflow, screens, pain-point coverage, and demonstration approach for converting a manual production order process into a modern web application.

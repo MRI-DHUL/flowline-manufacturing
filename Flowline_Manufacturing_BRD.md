@@ -44,6 +44,15 @@ It is intended to align business stakeholders, UX/UI designers,
 developers, QA, and project owners before detailed user stories and
 technical design are prepared.
 
+### 2.1 Current Implementation Direction
+
+This BRD controls production functionality and workflow. The supplied
+wireframe remains a historical demonstration and a selective visual
+reference; it must not be recreated or treated as a full-screen design
+blueprint. The wireframe may be consulted only when the project owner
+requests a specific visual element, such as its color theme, card,
+dropdown, or stepper design. Only that requested element may be reused.
+
 ## 3. Business Context and Problem Statement
 
 ### 3.1 Current State
@@ -1090,7 +1099,8 @@ owner:
 
 -   Convert each requirement into epics, user stories, and acceptance
     criteria.
--   Validate wireframes and reusable page/component boundaries.
+-   Define reusable page/component boundaries from the BRD; validate
+    only specifically requested visual elements against the wireframe.
 -   Define role-permission and status-transition matrices.
 
 ### Phase 3 --- Core Workflow

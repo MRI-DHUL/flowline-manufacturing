@@ -3,18 +3,21 @@
 ## Non-Negotiable Constraints
 
 1. BRD source-only constraint: `Flowline_Manufacturing_BRD.md` is the only approved source for business scope, requirements, rules, and acceptance criteria.
-2. Wireframe source-only constraint: the files in `wireframe/` are the only approved source for the UI and demonstrated workflow.
-3. Do not add a role, screen, field, workflow state, integration, report, or business rule unless it is present in those sources and approved through a BRD update.
-4. When the BRD and wireframe differ, stop the affected work and record the mismatch for stakeholder approval. Do not invent a resolution.
-5. Keep production code separated into `frontend/`, `backend/`, and `database/`. Keep `wireframe/` unchanged as the reference prototype.
-6. Prefer small, reusable components and modules with descriptive names, single responsibilities, validation, consistent error handling, and focused tests.
-7. A step is complete only when its exit gate is satisfied and its evidence is recorded.
+2. Selective wireframe constraint: do not recreate the wireframe or use it as a full-screen blueprint. Refer to `wireframe/` only when the user requests a specific visual element, such as its color theme, card, dropdown, or stepper design, and copy only that requested design pattern.
+3. The BRD controls functionality and workflow. A user request controls which wireframe visual pattern, if any, may be reused.
+4. Do not add a role, screen, field, workflow state, integration, report, or business rule unless it is present in the BRD and approved through a BRD update.
+5. When a requested wireframe design conflicts with the BRD or accessibility requirements, stop the affected work and record the mismatch for approval. Do not invent a resolution.
+6. Keep production code separated into `frontend/`, `backend/`, and `database/`. Keep `wireframe/` unchanged as a selective visual reference.
+7. Prefer small, reusable components and modules with descriptive names, single responsibilities, validation, consistent error handling, and focused tests.
+8. A step is complete only when its exit gate is satisfied and its evidence is recorded.
+
+The wireframe is consulted only for a specifically user-requested visual element. The final UI is not required to match the full wireframe screens.
 
 ## Step 1 - Plan and Set Up
 
 ### Objective
 
-Convert the approved BRD and wireframe into a traceable, implementation-ready backlog and prepare the project structure.
+Convert the approved BRD into a traceable, implementation-ready backlog and prepare the project structure. Record wireframe styling only when the user requests a specific visual pattern.
 
 ### Work
 
@@ -49,12 +52,13 @@ Convert the approved BRD and wireframe into a traceable, implementation-ready ba
 
 ### Objective
 
-Compare the current `wireframe/` behavior with the BRD before writing production features.
+Compare existing demonstrated behavior with the BRD before writing production features, without treating the wireframe layout as the target UI.
 
 ### Work
 
-- Walk through all 14 logical screens and the complete CSR-to-delivery flow.
+- Walk through all 14 BRD logical screens and the complete CSR-to-delivery flow.
 - Compare each available role action, field, status, stage gate, notification, exception path, and timeline event with its BRD requirement.
+- For visuals, inspect only the wireframe element explicitly requested by the user and do not inherit surrounding layout or styling.
 - Classify each item as `Covered`, `Partial`, `Missing`, `Conflicting`, or `Blocked by decision`.
 - Check known high-risk areas: authentication versus demo role switching, attachments, rejection and clarification, material shortage, rework routing, delivery evidence, permissions, audit history, SLA definitions, accessibility, and responsive tablet behavior.
 - Separate prototype-only behavior and sample data from production requirements.
@@ -62,7 +66,7 @@ Compare the current `wireframe/` behavior with the BRD before writing production
 
 ### Required Outputs
 
-- Gap register with BRD requirement ID, wireframe reference, observed behavior, classification, risk, and proposed test.
+- Gap register with BRD requirement ID, observed behavior, classification, risk, and proposed test; include a wireframe reference only for an explicitly requested visual element.
 - Approved implementation scope for the next step.
 - List of conflicts or missing business decisions requiring stakeholder input.
 
@@ -110,7 +114,7 @@ Use disposable technical spikes and automated contract tests to prove that the p
 
 ### Objective
 
-Build only the behavior that passed Step 3 and is traceable to the BRD and wireframe.
+Build only the behavior that passed Step 3 and is traceable to the BRD. Reuse only wireframe visual patterns explicitly requested by the user.
 
 ### Implementation Order
 
@@ -148,7 +152,8 @@ Verify the complete user flow in the running UI and close every discovered defec
 - Run clarification, rejection, hold, material shortage, production issue/rework, and delivery issue paths that have approved rules.
 - Verify stage gates, permissions, queues, search, filters, validation, notifications, unread counts, deep navigation, timeline history, manager metrics, and reset/recovery behavior.
 - Check keyboard navigation, focus visibility, labels, contrast, error messages, text fit, overflow, and absence of overlapping UI.
-- Compare visible labels, layout, actions, and flow against the wireframe and BRD acceptance criteria.
+- Compare functionality, labels, actions, and flow against BRD acceptance criteria.
+- Compare only explicitly requested visual patterns against their matching wireframe element.
 
 ### Bug Evidence, Fix, and Recheck Loop
 
@@ -167,14 +172,15 @@ Then follow this loop:
 4. Run the focused regression test.
 5. Repeat the affected UI flow and capture after-fix evidence.
 6. Run the full end-to-end smoke flow when the fix affects shared workflow behavior.
-7. Close the bug only when expected behavior matches the BRD and wireframe.
+7. Close the bug only when behavior matches the BRD and any explicitly requested wireframe visual pattern matches that element alone.
 
 ### Final Exit Gate
 
 - All 12 BRD acceptance criteria pass or have a formally approved exception.
 - No open critical or high-severity defects remain.
 - Medium and low defects have an approved disposition.
-- The final UI walkthrough matches the approved wireframe flow.
+- The final UI walkthrough satisfies the BRD flow without recreating the wireframe screens.
+- Any explicitly requested wireframe-derived visual pattern matches only the requested element.
 - Business owner, operations representative, technical lead, and project owner approval is recorded.
 
 ## Required Repository Layout
@@ -183,7 +189,7 @@ Then follow this loop:
 flowline-manufacturing/
 |-- Flowline_Manufacturing_BRD.md
 |-- IMPLEMENTATION_PLAN.md
-|-- wireframe/               # Approved UI/flow reference; not production code
+|-- wireframe/               # Selective visual reference; never a full UI blueprint
 |-- frontend/                # React + Tailwind UI and frontend tests
 |-- backend/                 # Node.js API, domain rules, authorization, and tests
 |-- database/                # PostgreSQL migrations, seeds, and database tests
