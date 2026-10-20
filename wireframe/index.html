@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Manufacturing order workflow demonstration">
+  <title>Flowline | Manufacturing Orders</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="app-header">
+    <a class="brand" href="#" aria-label="Flowline home">
+      <span class="brand-mark" aria-hidden="true">5</span>
+      <span>
+        <strong>Flowline</strong>
+        <small>Manufacturing orders</small>
+      </span>
+    </a>
+    <div class="header-actions">
+      <div class="role-control">
+        <label for="role-select">Demonstration role</label>
+        <select id="role-select">
+          <option value="CSR">Requestor / CSR</option>
+          <option value="R&D">R&amp;D Expert</option>
+          <option value="Planning">Planning</option>
+          <option value="Press">Press</option>
+          <option value="Shipping">Shipping</option>
+          <option value="Manager">Manager</option>
+        </select>
+      </div>
+      <div class="notification-shell">
+        <button
+          class="notification-button"
+          id="notification-toggle"
+          type="button"
+          aria-label="Open notifications"
+          aria-controls="notification-panel"
+          aria-expanded="false"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+            <path d="M10 21h4"></path>
+          </svg>
+          <span class="notification-count" id="notification-count" hidden>0</span>
+        </button>
+        <section class="notification-panel" id="notification-panel" aria-labelledby="notification-title" hidden>
+          <div class="notification-panel-header">
+            <div>
+              <p class="eyebrow">Role alerts</p>
+              <h2 id="notification-title">Notifications</h2>
+            </div>
+            <button class="text-button" id="mark-all-read" type="button">Mark all read</button>
+          </div>
+          <div class="notification-list" id="notification-list"></div>
+        </section>
+      </div>
+      <button class="button button-secondary" id="reset-demo" type="button">
+        Reset demo
+      </button>
+      <div class="user-chip" aria-label="Current demonstration user">
+        <span class="avatar" aria-hidden="true">AM</span>
+        <span><strong id="user-name">Asha Menon</strong><small id="user-role">CSR</small></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="demo-notice" role="note">
+    Prototype mode: role switching is for demonstration only. Production access
+    will use authenticated, role-based permissions.
+  </div>
+
+  <main id="main-content" tabindex="-1">
+    <section class="page-heading" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow" id="page-eyebrow">Requestor / CSR workspace</p>
+        <h1 id="page-title">My order requests</h1>
+        <p id="page-description">
+          Create requests, respond to clarifications, and track every handoff.
+        </p>
+      </div>
+      <button class="button button-primary" id="primary-action" type="button">
+        Create new order
+      </button>
+    </section>
+
+    <section class="hold-alert" id="hold-alert" aria-labelledby="hold-alert-title" hidden>
+      <div class="hold-alert-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M12 9v4"></path>
+          <path d="M12 17h.01"></path>
+          <path d="M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path>
+        </svg>
+      </div>
+      <div class="hold-alert-content">
+        <p class="eyebrow">Action required</p>
+        <h2 id="hold-alert-title">Order placed on hold</h2>
+        <p id="hold-alert-message"></p>
+        <small id="hold-alert-meta"></small>
+      </div>
+      <div class="hold-alert-actions">
+        <button class="button button-primary" id="view-alert-order" type="button">View order</button>
+        <button class="button button-secondary" id="read-alert" type="button">Mark as read</button>
+      </div>
+    </section>
+
+    <section class="metrics" id="metrics" aria-label="Workspace summary"></section>
+
+    <section class="manager-panel" id="manager-panel" aria-labelledby="manager-title" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Operational overview</p>
+          <h2 id="manager-title">Workload and risk</h2>
+        </div>
+        <label class="compact-field" for="manager-filter">
+          Team
+          <select id="manager-filter">
+            <option value="All">All teams</option>
+            <option value="R&D">R&amp;D</option>
+            <option value="Planning">Planning</option>
+            <option value="Press">Press</option>
+            <option value="Shipping">Shipping</option>
+          </select>
+        </label>
+      </div>
+      <div class="manager-grid">
+        <div class="chart-card">
+          <h3>Orders by stage</h3>
+          <div id="stage-chart" class="bar-chart"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Attention required</h3>
+          <div id="risk-list" class="risk-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="workbench" aria-label="Order workspace">
+      <aside class="order-panel" aria-labelledby="queue-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow" id="queue-label">Active queue</p>
+            <h2 id="queue-title">Orders</h2>
+          </div>
+          <span class="count" id="order-count">0</span>
+        </div>
+        <div class="filters">
+          <label class="search-field" for="order-search">
+            <span>Search orders</span>
+            <input id="order-search" type="search" placeholder="Order, customer, product">
+          </label>
+          <label for="status-filter">
+            <span>Status</span>
+            <select id="status-filter">
+              <option value="All">All statuses</option>
+            </select>
+          </label>
+        </div>
+        <div id="order-list" class="order-list" role="list"></div>
+      </aside>
+
+      <article class="detail-panel">
+        <div class="detail-tabs" role="tablist" aria-label="Order workspace views">
+          <button
+            class="detail-tab active"
+            id="overview-tab"
+            type="button"
+            role="tab"
+            aria-controls="order-detail"
+            aria-selected="true"
+          >
+            Overview
+          </button>
+          <button
+            class="detail-tab"
+            id="activity-tab"
+            type="button"
+            role="tab"
+            aria-controls="activity-panel"
+            aria-selected="false"
+            tabindex="-1"
+          >
+            Activity
+          </button>
+        </div>
+        <div
+          class="detail-tab-panel"
+          id="order-detail"
+          role="tabpanel"
+          aria-labelledby="overview-tab"
+          aria-live="polite"
+        >
+          <div class="empty-state">
+            <strong>Select an order</strong>
+            <p>Choose an order from the queue to review its details and history.</p>
+          </div>
+        </div>
+        <section
+          class="detail-tab-panel activity-panel"
+          id="activity-panel"
+          role="tabpanel"
+          aria-labelledby="activity-tab"
+          hidden
+        >
+          <div class="drawer-shell">
+            <div class="drawer-header">
+              <div>
+                <div class="history-heading-row">
+                  <p class="eyebrow">Manager insight</p>
+                  <span class="audit-badge">Audit ready</span>
+                </div>
+                <h2 id="history-title">Order activity</h2>
+                <p id="history-description"></p>
+              </div>
+            </div>
+            <div class="history-summary">
+              <span>Latest update</span>
+              <strong id="history-latest">No activity recorded</strong>
+            </div>
+            <div class="drawer-content">
+              <ol class="timeline timeline-full" id="history-list"></ol>
+            </div>
+          </div>
+        </section>
+      </article>
+    </section>
+  </main>
+
+  <dialog id="action-dialog" aria-labelledby="dialog-title">
+    <form id="action-form" method="dialog" novalidate>
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow" id="dialog-eyebrow">Workflow action</p>
+          <h2 id="dialog-title">Update order</h2>
+        </div>
+        <button class="icon-button" type="button" id="close-dialog" aria-label="Close dialog">×</button>
+      </div>
+      <p id="dialog-description"></p>
+      <div id="dialog-fields" class="dialog-fields"></div>
+      <p class="form-error" id="form-error" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <button class="button button-secondary" type="button" id="cancel-dialog">Cancel</button>
+        <button class="button button-primary" type="submit" id="confirm-action">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
