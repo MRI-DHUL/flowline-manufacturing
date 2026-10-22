@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { registerAccount, signIn } from './auth-service'
+import { registerAccount, signIn } from '../../frontend/src/features/auth/auth-service'
 
 afterEach(() => {
   vi.unstubAllEnvs()

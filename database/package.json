@@ -7,7 +7,7 @@
     "migrate": "tsx src/migrate.ts up",
     "migrate:status": "tsx src/migrate.ts status",
     "health": "tsx src/health.ts",
-    "test": "vitest run",
+    "test": "vitest run --root .. test/database",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -16,6 +16,7 @@ export type AuthUser = {
   email: string
   displayName: string
   status: 'PENDING' | 'ACTIVE' | 'DISABLED'
+  roles: string[]
 }
 
 export type LoginResult = {
@@ -55,16 +56,23 @@ type AccountRow = {
   password_hash: string
   failed_attempts: number
   locked_until: Date | null
+  roles: string[]
 }
 
 const dummyHash = hashPassword(randomUUID())
 
-function toUser(row: Pick<AccountRow, 'auth_user_id' | 'email' | 'display_name' | 'status'>): AuthUser {
+function toUser(
+  row: Pick<
+    AccountRow,
+    'auth_user_id' | 'email' | 'display_name' | 'status' | 'roles'
+  >,
+): AuthUser {
   return {
     id: row.auth_user_id,
     email: row.email,
     displayName: row.display_name,
     status: row.status,
+    roles: row.roles,
   }
 }
 
@@ -108,7 +116,7 @@ export class PostgresAuthService implements AuthService {
         [profile.id, passwordHash],
       )
       await client.query('COMMIT')
-      return toUser(profile)
+      return toUser({ ...profile, roles: [] })
     } catch (error) {
       await client.query('ROLLBACK')
       if ((error as { code?: string }).code === '23505') {
@@ -136,7 +144,14 @@ export class PostgresAuthService implements AuthService {
           profile.status,
           account.password_hash,
           account.failed_attempts,
-          account.locked_until
+          account.locked_until,
+          ARRAY(
+            SELECT role.code
+            FROM flowline.user_roles AS user_role
+            JOIN flowline.roles AS role ON role.id = user_role.role_id
+            WHERE user_role.user_profile_id = profile.id
+            ORDER BY role.code
+          ) AS roles
         FROM flowline.user_profiles AS profile
         JOIN flowline.auth_accounts AS account
           ON account.user_profile_id = profile.id
@@ -218,25 +233,38 @@ export class PostgresAuthService implements AuthService {
   }
 
   async getSession(token: string): Promise<AuthUser | null> {
+    const tokenHash = hashSessionToken(token)
     const result = await this.pool.query<AccountRow>(
       `
-        UPDATE flowline.auth_sessions AS session
-        SET last_seen_at = clock_timestamp()
-        FROM flowline.user_profiles AS profile
-        WHERE session.token_hash = $1
-          AND session.user_profile_id = profile.id
-          AND session.revoked_at IS NULL
-          AND session.expires_at > clock_timestamp()
-          AND profile.status <> 'DISABLED'
-        RETURNING
+        SELECT
           profile.auth_user_id,
           profile.email,
           profile.display_name,
-          profile.status
+          profile.status,
+          ARRAY(
+            SELECT role.code
+            FROM flowline.user_roles AS user_role
+            JOIN flowline.roles AS role ON role.id = user_role.role_id
+            WHERE user_role.user_profile_id = profile.id
+            ORDER BY role.code
+          ) AS roles
+        FROM flowline.auth_sessions AS session
+        JOIN flowline.user_profiles AS profile
+          ON profile.id = session.user_profile_id
+        WHERE session.token_hash = $1
+          AND session.revoked_at IS NULL
+          AND session.expires_at > clock_timestamp()
+          AND profile.status <> 'DISABLED'
       `,
-      [hashSessionToken(token)],
+      [tokenHash],
     )
     const profile = result.rows[0]
+    if (profile) {
+      await this.pool.query(
+        'UPDATE flowline.auth_sessions SET last_seen_at = clock_timestamp() WHERE token_hash = $1',
+        [tokenHash],
+      )
+    }
     return profile ? toUser(profile) : null
   }
 

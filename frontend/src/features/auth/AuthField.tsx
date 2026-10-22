@@ -1,6 +1,7 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import type { InputHTMLAttributes } from 'react'
+import { Button, TextInput } from '../../components/ui'
 
 type AuthFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   id: string
@@ -28,7 +29,7 @@ export function AuthField({
         {hint && !error ? <span id={`${id}-hint`}>{hint}</span> : null}
       </div>
       <div className="input-shell" data-invalid={Boolean(error)}>
-        <input
+        <TextInput
           {...inputProps}
           id={id}
           type={isPassword && passwordVisible ? 'text' : type}
@@ -36,8 +37,10 @@ export function AuthField({
           aria-describedby={descriptionId}
         />
         {isPassword ? (
-          <button
+          <Button
             className="visibility-button"
+            variant="quiet"
+            size="sm"
             type="button"
             onClick={() => setPasswordVisible((visible) => !visible)}
             aria-label={passwordVisible ? 'Hide password' : 'Show password'}
@@ -47,7 +50,7 @@ export function AuthField({
             ) : (
               <Eye size={19} aria-hidden="true" />
             )}
-          </button>
+          </Button>
         ) : null}
       </div>
       {error ? (

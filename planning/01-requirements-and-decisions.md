@@ -16,13 +16,14 @@
 | FR-004 | Login and administration | PostgreSQL-backed authentication and user/role administration | User profile, Auth account, Auth session, Role | Register, login, session, logout, disabled user, role change | Technical lead | Authentication complete; role administration pending |
 | FR-005 | Timeline/activity | All workflow commands | Audit event, User | Actor is retained for each important action | Operations representative | Ready for gap check |
 | FR-006 | Login and registration | `/api/v1/auth/register` and `/api/v1/auth/login` | User profile, Auth account, Auth session | Real register/login pass; registration cannot self-assign a role | Technical lead | Complete |
-| FR-010 | Create order | Create draft | Order | CSR creates a draft | Operations representative | Ready for gap check |
-| FR-011 | CSR dashboard/order form | Get and update draft | Order | CSR resumes and edits draft | Operations representative | Ready for gap check |
+| FR-010 | Create order | Create draft | Order | CSR creates an incomplete draft | Operations representative | Complete |
+| FR-011 | CSR dashboard/order form | Get and update draft | Order | CSR resumes and edits a refresh-safe draft route | Operations representative | Complete |
 | FR-012 | Create order form | Create/update draft | Order, Attachment | Approved fields persist correctly | Business owner | Blocked: final field approval |
 | FR-013 | All forms | Request validation | Validation rules | Missing/invalid fields return actionable errors | Technical lead | Partial: field rules pending |
-| FR-014 | Create/order detail | Submit order | Order, Audit event | Valid draft enters R&D Review | Operations representative | Ready for gap check |
-| FR-015 | CSR dashboard | CSR order query | Order, Clarification | Queue shows required columns and clarification | Operations representative | Ready for gap check |
-| FR-017 | Form/documents/order detail | Attachment create/read | Attachment, Revision | File remains linked to correct order/revision | Technical lead | Blocked: storage and retention rules |
+| FR-014 | Create/order detail | Submit order | Order, Revision, Audit event | Core-field gate transitions valid draft to R&D Review | Operations representative | Complete |
+| FR-015 | CSR dashboard | CSR order query | Order, Clarification | Owned queue, search, status filter, details, and clarification indicators | Operations representative | Complete |
+| FR-017 | Form/documents/order detail | Attachment create/read/delete | Attachment, Revision | Protected PostgreSQL content, ownership checks, 5 MB limit | Technical lead | Storage complete; retention pending |
+| FR-018 | CSR order form/detail | List active R&D users and assign selected reviewer | Order owner, User profile, Role, Audit event | Submission blocked until a specific active R&D user is assigned | Operations representative | Complete |
 | FR-020 | R&D work queue | R&D queue query | Order | Only actionable reviews appear | Operations representative | Ready for gap check |
 | FR-021 | R&D review | Order and attachment queries | Order, Attachment | Reviewer can inspect required context | Operations representative | Ready for gap check |
 | FR-022 | R&D review/actions | R&D decision commands | Technical review, Hold | Approve, clarify, reject, hold permission tests | Business owner | Partial: rejection/re-entry authority pending |
@@ -86,7 +87,7 @@
 |---|---|---|
 | NFR-001 | Availability design and operational test | Blocked: target pending |
 | NFR-002 | Queue/detail performance test | Blocked: load and response target pending |
-| NFR-003 | Desktop/tablet viewport checks | Partial: tablet widths and mobile need pending |
+| NFR-003 | 320px, 375px, 768px, 1024px, and 1440px viewport checks with overflow/control-fit assertions | Auth and dashboard complete; apply the same matrix to every future route |
 | NFR-004 | Keyboard, focus, labels, contrast, status-label checks | Ready for gap check |
 | NFR-005 | Authentication and server authorization tests | Authentication complete; workflow authorization pending permission approval |
 | NFR-006 | Record/action access tests | Blocked: access policy pending |
@@ -103,8 +104,8 @@ All entries originate in BRD Section 19. Owners are accountable approval roles f
 
 | ID | Decision | Accountable owner | Status | Blocks |
 |---|---|---|---|---|
-| D-01 | Requestor and CSR relationship | Business owner | Pending | Role model and permissions |
-| D-02 | Mandatory fields/documents by order type | Operations representative | Pending | Forms, validation, stage gates |
+| D-01 | Requestor and CSR relationship | Business owner | Resolved: one role for current release | None |
+| D-02 | Mandatory fields/documents by order type | Operations representative | Resolved for CSR core submission fields | Other order types only |
 | D-03 | Approve/reject/hold/reopen/cancel authority by stage | Business owner | Pending | Permission and transition matrices |
 | D-04 | Rejected order resubmission and destination | Business owner | Pending | R&D exception path |
 | D-05 | Material shortage workflow and verification | Operations representative | Pending | Planning release rules |
@@ -113,7 +114,7 @@ All entries originate in BRD Section 19. Owners are accountable approval roles f
 | D-08 | SLAs, calendars, escalation rules | Operations representative | Pending | Manager risks and notifications |
 | D-09 | Standalone/manual or required integrations | Business owner | Pending | Integration scope |
 | D-10 | PostgreSQL-backed email/password authentication; detailed user administration | Technical lead | Authentication selected and implemented; administration pending | Role administration only |
-| D-11 | File limits and document/audit retention | Business owner | Pending | Attachments and retention |
+| D-11 | File limits and document/audit retention | Business owner | PostgreSQL bytea and 5 MB selected; retention pending | Retention policy only |
 | D-12 | Mobile requirement for Press/Shipping | Operations representative | Pending | Responsive scope |
 | D-13 | Notification channels | Business owner | Pending | Notification delivery design |
 | D-14 | Availability, performance, backup, recovery targets | Technical lead | Pending | NFR acceptance |

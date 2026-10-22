@@ -12,6 +12,7 @@ export type AuthUser = {
   email: string
   displayName: string
   status: 'PENDING' | 'ACTIVE' | 'DISABLED'
+  roles: string[]
 }
 
 type AuthResponse = {

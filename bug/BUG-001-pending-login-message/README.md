@@ -41,9 +41,10 @@ The login page ignored the authenticated user's returned status and used one har
 
 ## Fix
 
-Use the typed API response to select a status-aware success message. `PENDING` accounts are informed that administrator role assignment is required.
+Navigate every successfully authenticated account to the protected dashboard. The dashboard loads active role workspaces and shows the access-pending state for accounts awaiting activation or role assignment.
 
 ## Regression Verification
 
-- Unit test covers `PENDING` and `ACTIVE` success messages.
-- Browser flow must register a pending account, sign in, and display the pending-role message.
+- Browser flow must navigate to `/dashboard` after successful authentication.
+- Pending accounts must display the dashboard access-pending state.
+- Active role-assigned accounts must display their role workspace.

@@ -1,10 +1,18 @@
 import cors from '@fastify/cors'
 import cookie from '@fastify/cookie'
+import multipart from '@fastify/multipart'
+import websocket from '@fastify/websocket'
 import Fastify from 'fastify'
 import type { FastifyServerOptions } from 'fastify'
 import { registerAuthRoutes } from './auth-routes.js'
 import type { AuthService } from './auth-service.js'
+import { registerDashboardRoutes } from './dashboard-routes.js'
+import type { DashboardService } from './dashboard-service.js'
+import { registerCsrRoutes } from './csr-routes.js'
+import type { CsrService } from './csr-service.js'
 import type { DatabaseHealth } from './database.js'
+import { registerNotificationRoutes } from './notification-routes.js'
+import type { NotificationHub, NotificationService } from './notification-service.js'
 
 type BuildAppOptions = {
   frontendOrigin: string
@@ -12,6 +20,10 @@ type BuildAppOptions = {
   logger?: FastifyServerOptions['logger']
   databaseCheck: () => Promise<DatabaseHealth>
   authService: AuthService
+  dashboardService: DashboardService
+  csrService: CsrService
+  notificationService: NotificationService
+  notificationHub: NotificationHub
 }
 
 export function buildApp(options: BuildAppOptions) {
@@ -20,10 +32,18 @@ export function buildApp(options: BuildAppOptions) {
   app.register(cors, {
     origin: options.frontendOrigin,
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   })
   app.register(cookie)
+  app.register(multipart, {
+    limits: { files: 1, fileSize: 5 * 1024 * 1024 },
+  })
 
   registerAuthRoutes(app, options.authService, options.secureCookies)
+  registerDashboardRoutes(app, options.authService, options.dashboardService)
+  registerCsrRoutes(app, options.authService, options.csrService)
+  app.register(websocket)
+  registerNotificationRoutes(app, options.authService, options.notificationService, options.notificationHub)
 
   app.get('/health', async () => ({
     status: 'ok',

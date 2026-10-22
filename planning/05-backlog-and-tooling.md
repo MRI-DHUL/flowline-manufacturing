@@ -7,14 +7,14 @@ Priority follows the BRD. Stories with unresolved decisions cannot enter impleme
 | Order | Epic/story | BRD references | Acceptance summary | Status |
 |---|---|---|---|---|
 | 1 | Production identity and authorization | FR-001-006, BR-010/011, NFR-005/006 | Login/registration validate input, registration cannot self-assign roles, and authenticated users receive only permitted records/actions | Authentication complete; role authorization blocked by D-01/D-03 |
-| 2 | Order draft and submission | FR-010-017, BR-001-003 | CSR creates/resumes a validated draft, attaches approved files, submits to R&D | Blocked by D-02/D-11 |
+| 2 | Order draft and submission | FR-010-017, BR-001-003 | CSR creates/resumes incomplete drafts, uploads protected files, responds to clarifications, and submits through core gates | Complete; retention policy remains D-11 |
 | 3 | Unified order detail and audit timeline | FR-060-065, BR-003/007/009 | Permitted users see current state, owner, next action, documents, immutable history | Partial; D-11/access policy |
 | 4 | R&D queue and feasibility | FR-020-024 | R&D reviews context and records an auditable allowed decision; Planning gate enforced | Partial; D-03/D-04 |
 | 5 | Planning and Press release | FR-030-036, BR-005 | Planning records readiness/shortage, schedules, and cannot release blocked work | Blocked by D-03/D-05 |
 | 6 | Press execution | FR-040-045, BR-006 | Press starts, updates, reports issues, and completes only with approved evidence | Blocked by D-03/D-06/D-07 |
 | 7 | Shipping and delivery | FR-050-055, BR-007/008 | Shipping dispatches and confirms delivery only with approved evidence | Partial; D-02/D-11 |
 | 8 | Hold/rework and notifications | FR-070-076, BR-004/009/012 | Exceptions route to owner/Manager, remain visible, resolve with retained history | Blocked by D-03/D-06/D-08/D-13 |
-| 9 | Manager overview | FR-080-084 | Counts/workload reconcile; approved age/risk definitions drill into orders | Blocked by D-08 |
+| 9 | Manager overview | FR-080-084 | Counts/workload reconcile; approved age/risk definitions drill into orders | Shared role-aware dashboard core complete; SLA/risk reporting blocked by D-08 |
 | 10 | Accessibility and responsive quality | NFR-003/004/009 | Agreed desktop/tablet UI supports keyboard, focus, labels, contrast, errors, no data loss | Partial; D-12 |
 | 11 | Operational readiness | NFR-001/002/007/008/010/012 | Approved performance, security, audit, logging, backup/recovery targets pass | Blocked by D-11/D-14/D-15 |
 

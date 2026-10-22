@@ -375,6 +375,14 @@ confirmed.
                           submit an order for R&D 
                           review.                 
 
+    FR-018                  Before submission, CSR Must
+                                                    shall assign the order  
+                                                    to a specific active    
+                                                    R&D user. The system    
+                                                    shall retain the        
+                                                    assignment in the       
+                                                    order audit history.    
+
   FR-015                  The CSR workspace shall Must
                           show requests, status,  
                           stage, owner, requested 
@@ -1069,10 +1077,12 @@ demonstrate that:
 ## 19. Decisions Required Before Production Implementation
 
 The following decisions are open and must be recorded by the business
-owner, except item 10 which was resolved on 20 October 2026:
+owner, except resolved items marked below:
 
-1.  Are Requestor and CSR the same role?
-2.  What fields and documents are mandatory for every order type?
+1.  **Resolved:** Requestor and CSR are one role for the current release.
+2.  **Resolved for the current release:** Submission requires customer,
+    product, packaging type, material, quantity, and requested delivery
+    date. Other listed order fields remain optional.
 3.  Who can approve, reject, hold, reopen, or cancel an order at each
     stage?
 4.  Can rejected orders be edited and resubmitted? If yes, which stage
@@ -1088,8 +1098,9 @@ owner, except item 10 which was resolved on 20 October 2026:
     email/password accounts, Argon2id password hashes, hashed session
     tokens, and HTTP-only session cookies. Users cannot self-assign
     roles; the detailed administration process remains to be approved.
-11. What are the file type/size limits, document retention rules, and
-    audit retention period?
+11. **Partially resolved:** Supporting files are stored in protected
+    PostgreSQL `bytea` content with a 5 MB per-file limit. File-type,
+    document retention, and audit retention policies remain open.
 12. Is mobile support required for Press and Shipping?
 13. Which notification channels are required: in-app only, email, or
     others?

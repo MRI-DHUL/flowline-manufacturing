@@ -4,7 +4,7 @@ import {
   hashPassword,
   hashSessionToken,
   verifyPassword,
-} from './auth-crypto.js'
+} from '../../backend/src/auth-crypto.js'
 
 describe('auth crypto', () => {
   it('hashes passwords with Argon2id and verifies only the correct value', async () => {

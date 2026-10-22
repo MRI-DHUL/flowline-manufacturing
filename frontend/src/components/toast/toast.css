@@ -1,0 +1,104 @@
+.toast-viewport {
+  position: fixed;
+  z-index: 1000;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  width: min(380px, calc(100vw - 36px));
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 32px;
+  min-height: 76px;
+  padding: 14px 12px 15px;
+  align-items: start;
+  gap: 10px;
+  overflow: hidden;
+  color: #1c2938;
+  background: #fff;
+  border: 1px solid #cbd6e1;
+  border-left: 4px solid #176b87;
+  border-radius: 8px;
+  box-shadow: 0 16px 38px rgba(16, 37, 63, 0.2);
+  pointer-events: auto;
+  animation: toast-enter 180ms ease-out;
+}
+
+.toast-item[data-tone='success'] { border-left-color: #1f8a70; }
+.toast-item[data-tone='error'] { border-left-color: #b33535; }
+
+.toast-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: #176b87;
+  background: #dff2f5;
+  border-radius: 7px;
+}
+
+.toast-item[data-tone='success'] .toast-icon { color: #17654f; background: #dff6ee; }
+.toast-item[data-tone='error'] .toast-icon { color: #963434; background: #fde7e7; }
+
+.toast-item strong {
+  display: block;
+  padding-top: 1px;
+  color: #10253f;
+  font-size: 13px;
+}
+
+.toast-item p {
+  margin: 4px 0 0;
+  color: #52647a;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.toast-item button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  color: #66758a;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.toast-item button:hover { color: #10253f; background: #eef3f6; }
+
+.toast-timer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.3;
+  transform-origin: left;
+  animation: toast-timer var(--toast-duration) linear forwards;
+}
+
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-timer {
+  to { transform: scaleX(0); }
+}
+
+@media (max-width: 520px) {
+  .toast-viewport { top: 10px; right: 10px; width: calc(100vw - 20px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-item,
+  .toast-timer { animation: none; }
+}

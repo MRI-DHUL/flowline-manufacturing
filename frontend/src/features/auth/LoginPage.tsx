@@ -1,10 +1,11 @@
 import { ArrowRight } from 'lucide-react'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { Button } from '../../components/ui'
+import { useToast } from '../../components/toast/useToast'
 import { AuthField } from './AuthField'
 import { AuthLayout } from './AuthLayout'
-import { getLoginSuccessMessage } from './auth-messages'
 import { signIn } from './auth-service'
 import { validateLogin } from './auth-validation'
 import type { FieldErrors, LoginValues } from './auth-validation'
@@ -15,29 +16,31 @@ const initialValues: LoginValues = {
 }
 
 export function LoginPage() {
+  const navigate = useNavigate()
+  const { showToast } = useToast()
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState<FieldErrors<LoginValues>>({})
-  const [formError, setFormError] = useState('')
-  const [formMessage, setFormMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const nextErrors = validateLogin(values)
     setErrors(nextErrors)
-    setFormError('')
-    setFormMessage('')
 
     if (Object.keys(nextErrors).length > 0) return
 
     setSubmitting(true)
     try {
-      const result = await signIn(values)
-      setFormMessage(getLoginSuccessMessage(result.user.status))
+      await signIn(values)
+      showToast({
+        title: 'Signed in successfully',
+        message: 'Opening your workspace.',
+        tone: 'success',
+      })
+      navigate('/dashboard', { replace: true })
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : 'Unable to sign in.',
-      )
+      const message = error instanceof Error ? error.message : 'Unable to sign in.'
+      showToast({ title: 'Sign in failed', message, tone: 'error' })
     } finally {
       setSubmitting(false)
     }
@@ -82,22 +85,10 @@ export function LoginPage() {
             }))
           }
         />
-
-        {formError ? (
-          <div className="form-alert" role="alert">
-            {formError}
-          </div>
-        ) : null}
-        {formMessage ? (
-          <div className="form-success" role="status">
-            {formMessage}
-          </div>
-        ) : null}
-
-        <button className="submit-button" type="submit" disabled={submitting}>
+        <Button variant="primary" className="submit-button" type="submit" disabled={submitting}>
           <span>{submitting ? 'Signing in...' : 'Sign in'}</span>
           <ArrowRight size={19} aria-hidden="true" />
-        </button>
+        </Button>
       </form>
     </AuthLayout>
   )

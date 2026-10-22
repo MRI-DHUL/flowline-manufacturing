@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loadMigrations } from './migration-files.js'
+import { loadMigrations } from '../../database/src/migration-files.js'
 
 describe('migration files', () => {
   it('loads ordered, non-empty migrations with stable checksums', async () => {

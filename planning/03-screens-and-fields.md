@@ -5,8 +5,8 @@
 | BRD screen | Proposed route/surface | Reusable building blocks | Status |
 |---|---|---|---|
 | 1. Login / registration | `/login` and `/register`; the demo role selector remains prototype-only | Shared auth layout, validated fields, password visibility control | Complete; pending accounts await administrator role assignment |
-| 2. CSR dashboard | `/orders` with CSR workspace | App shell, queue, filters, status/age labels | Ready for gap check |
-| 3. Create new order | `/orders/new` and draft edit route | Order form sections, validation summary, attachment control | Fields blocked by D-02/D-11 |
+| 2. CSR dashboard | `/dashboard` and `/dashboard/orders` | Analytics, owned queue, search/status filters, detail/activity tabs | Complete |
+| 3. Create new order | `/dashboard/orders/new` and `/dashboard/orders/:id/edit` | Draft form, core submission gate, active R&D reviewer assignment, PostgreSQL attachments, toasts | Complete |
 | 4. R&D work queue | `/orders` with R&D workspace | Shared queue, priority/age indicators | Ready for gap check |
 | 5. R&D feasibility review | Order detail action panel | Detail summary, decision form, evidence control | Partial; rejection path blocked |
 | 6. Planning work queue | `/orders` with Planning workspace | Shared queue, readiness labels | Ready for gap check |
@@ -17,7 +17,7 @@
 | 11. Dispatch/delivery | Order detail action panel | Shipment form, delivery form, evidence control | Partial; D-11 |
 | 12. Unified detail/timeline | `/orders/:orderId` | Order header, progress tracker, tabs, documents, timeline | Ready for gap check |
 | 13. Hold/rework resolution | Order detail dialog/panel | Exception summary, assignment, evidence, history | Blocked by D-03/D-06 |
-| 14. Manager dashboard | `/manager` | Metrics, stage chart, risk list, filters, drill-through | Metrics blocked by D-08 |
+| 14. Manager dashboard | `/dashboard` with Manager workspace | Shared role-aware shell, live metrics, queue, filters | Core dashboard complete; SLA/risk definitions blocked by D-08 |
 
 ## Shared Frontend Boundaries
 

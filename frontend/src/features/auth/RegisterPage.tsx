@@ -2,6 +2,8 @@ import { ArrowRight } from 'lucide-react'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { Button } from '../../components/ui'
+import { useToast } from '../../components/toast/useToast'
 import { AuthField } from './AuthField'
 import { AuthLayout } from './AuthLayout'
 import { registerAccount } from './auth-service'
@@ -16,31 +18,29 @@ const initialValues: RegisterValues = {
 }
 
 export function RegisterPage() {
+  const { showToast } = useToast()
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState<FieldErrors<RegisterValues>>({})
-  const [formError, setFormError] = useState('')
-  const [formMessage, setFormMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const nextErrors = validateRegistration(values)
     setErrors(nextErrors)
-    setFormError('')
-    setFormMessage('')
 
     if (Object.keys(nextErrors).length > 0) return
 
     setSubmitting(true)
     try {
       await registerAccount(values)
-      setFormMessage(
-        'Account created. Your role must be assigned by an administrator before workspace access.',
-      )
+      showToast({
+        title: 'Account created',
+        message: 'An administrator must assign your role before workspace access.',
+        tone: 'success',
+      })
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : 'Unable to create account.',
-      )
+      const message = error instanceof Error ? error.message : 'Unable to create account.'
+      showToast({ title: 'Registration failed', message, tone: 'error' })
     } finally {
       setSubmitting(false)
     }
@@ -115,22 +115,10 @@ export function RegisterPage() {
             }))
           }
         />
-
-        {formError ? (
-          <div className="form-alert" role="alert">
-            {formError}
-          </div>
-        ) : null}
-        {formMessage ? (
-          <div className="form-success" role="status">
-            {formMessage}
-          </div>
-        ) : null}
-
-        <button className="submit-button" type="submit" disabled={submitting}>
+        <Button variant="primary" className="submit-button" type="submit" disabled={submitting}>
           <span>{submitting ? 'Creating account...' : 'Create account'}</span>
           <ArrowRight size={19} aria-hidden="true" />
-        </button>
+        </Button>
       </form>
     </AuthLayout>
   )
