@@ -83,6 +83,7 @@ const testOrder: CsrOrderDetail = {
 function createCsrService(): CsrService {
   return {
     listOrders: vi.fn(async () => []),
+    listOrderStatuses: vi.fn(async () => []),
     getOrder: vi.fn(async () => testOrder),
     createDraft: vi.fn(async () => testOrder),
     updateDraft: vi.fn(async () => testOrder),

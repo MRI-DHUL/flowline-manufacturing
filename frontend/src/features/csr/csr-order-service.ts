@@ -214,3 +214,25 @@ export async function assignCsrRdReviewer(orderId: string, reviewerAuthUserId: s
   })
   return result.order
 }
+
+export type CsrOrderStatusRow = {
+  eventId: string
+  orderId: string
+  orderNumber: string
+  orderName: string | null
+  orderPlacedAt: string
+  currentStatus: string
+  status: string
+  completedBy: string
+  completedAt: string
+  transitionDurationSeconds: number | null
+  statusDurationSeconds: number
+  current: boolean
+  comments: string | null
+  action: string
+}
+
+export async function listCsrOrderStatuses() {
+  const result = await request<{ statuses: CsrOrderStatusRow[] }>('/api/v1/csr/order-status')
+  return result.statuses
+}

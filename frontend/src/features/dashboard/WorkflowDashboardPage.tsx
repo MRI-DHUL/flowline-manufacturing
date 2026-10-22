@@ -20,6 +20,7 @@ import { LoadingScreen } from '../../components/loading/LoadingScreen'
 import { RdWorkspace } from '../rd/RdWorkspace'
 import { Button, MetricCard, SegmentedTabs, Select, TextInput } from '../../components/ui'
 import { CsrOrdersWorkspace } from '../csr/CsrOrdersWorkspace'
+import { CsrOrderStatusPage } from '../csr/CsrOrderStatusPage'
 import { DashboardAnalytics } from './DashboardAnalytics'
 import { NotificationsPage } from './NotificationsPage'
 import { roleWorkspaces } from './dashboard-config'
@@ -349,7 +350,11 @@ export function WorkflowDashboardPage() {
   const workspace = roleWorkspaces[data.role]
   const activeView = location.pathname.startsWith('/dashboard/orders')
     ? 'orders'
-    : location.pathname.startsWith('/dashboard/notifications') ? 'notifications' : 'overview'
+    : location.pathname.startsWith('/dashboard/notifications')
+      ? 'notifications'
+      : data.role === 'CSR' && location.pathname.startsWith('/dashboard/order-status')
+        ? 'order-status'
+        : 'overview'
   const routeParts = location.pathname.split('/').filter(Boolean)
   const csrOrderId = routeParts[2] && routeParts[2] !== 'new' ? routeParts[2] : null
   const csrMode = routeParts[2] === 'new'
@@ -443,6 +448,10 @@ export function WorkflowDashboardPage() {
               <ClipboardList size={19} aria-hidden="true" />
               <span>Orders</span>
             </NavLink>
+            {data.role === 'CSR' ? <NavLink to="/dashboard/order-status" aria-label="Order Status">
+              <Clock3 size={19} aria-hidden="true" />
+              <span>Order Status</span>
+            </NavLink> : null}
           </nav>
           <div className="workflow-sidebar-role">
             <small>Workspace</small>
@@ -459,6 +468,8 @@ export function WorkflowDashboardPage() {
                 ? workspace.heading
                 : activeView === 'notifications'
                   ? 'Notifications'
+                : activeView === 'order-status'
+                  ? 'Order Status'
                 : csrMode === 'new'
                   ? 'Create new order'
                   : csrMode === 'edit'
@@ -470,6 +481,8 @@ export function WorkflowDashboardPage() {
                 ? workspace.description
                 : activeView === 'notifications'
                   ? 'Review, read, and manage all workspace notifications.'
+                : activeView === 'order-status'
+                  ? 'Track order handoffs, status durations, and ownership history.'
                 : 'Search, filter, and review orders assigned to your workspace.'}
             </span>
           </div>
@@ -481,7 +494,7 @@ export function WorkflowDashboardPage() {
           ) : null}
         </section>
 
-          {activeView === 'notifications' ? <NotificationsPage /> : activeView === 'overview' ? (
+          {activeView === 'notifications' ? <NotificationsPage /> : activeView === 'order-status' ? <CsrOrderStatusPage /> : activeView === 'overview' ? (
           <>
             <section className="workflow-metrics" aria-label="Workspace analytics">
               {metrics.map(({ label, value, icon: Icon }) => <MetricCard key={label} label={label} value={value} icon={Icon} />)}

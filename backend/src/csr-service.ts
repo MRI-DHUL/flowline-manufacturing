@@ -72,6 +72,23 @@ export type CsrOrderDetail = CsrOrderSummary & {
   }>
 }
 
+  export type CsrOrderStatusRow = {
+    eventId: string
+    orderId: string
+    orderNumber: string
+    orderName: string | null
+    orderPlacedAt: Date
+    currentStatus: string
+    status: string
+    completedBy: string
+    completedAt: Date
+    transitionDurationSeconds: number | null
+    statusDurationSeconds: number
+    current: boolean
+    comments: string | null
+    action: string
+  }
+
 export type CsrReviewer = {
   authUserId: string
   displayName: string
@@ -86,6 +103,7 @@ export type CsrAttachment = {
 
 export interface CsrService {
   listOrders(user: AuthUser, filters: { search?: string; status?: string }): Promise<CsrOrderSummary[]>
+    listOrderStatuses(user: AuthUser): Promise<CsrOrderStatusRow[]>
   getOrder(user: AuthUser, orderId: string): Promise<CsrOrderDetail>
   createDraft(user: AuthUser, patch: OrderPatch): Promise<CsrOrderDetail>
   updateDraft(user: AuthUser, orderId: string, patch: OrderPatch): Promise<CsrOrderDetail>
@@ -237,6 +255,73 @@ export class PostgresCsrService implements CsrService {
       [user.id, status, search],
     )
     return result.rows.map(toSummary)
+  }
+
+  async listOrderStatuses(user: AuthUser) {
+    ensureCsr(user)
+    const result = await this.pool.query<{
+      event_id: string
+      order_id: string
+      order_number: string
+      order_name: string | null
+      order_placed_at: Date
+      current_status: string
+      status: string
+      completed_by: string
+      completed_at: Date
+      transition_duration_seconds: string | null
+      status_duration_seconds: string
+      current: boolean
+      comments: string | null
+      action: string
+    }>(
+      `WITH status_events AS (
+         SELECT audit.id::text AS event_id, orders.id AS order_id,
+                orders.order_number, orders.product_name AS order_name,
+                orders.created_at AS order_placed_at,
+            orders.status AS current_status,
+                audit.new_status AS status,
+                COALESCE(profile.display_name, audit.actor_auth_user_id) AS completed_by,
+                audit.occurred_at AS completed_at,
+                audit.reason AS comments, audit.action,
+                LAG(audit.occurred_at) OVER (
+                  PARTITION BY orders.id ORDER BY audit.occurred_at, audit.id
+                ) AS previous_at,
+                LEAD(audit.occurred_at) OVER (
+                  PARTITION BY orders.id ORDER BY audit.occurred_at, audit.id
+                ) AS next_at
+         FROM flowline.orders AS orders
+         JOIN flowline.audit_events AS audit ON audit.order_id = orders.id
+         LEFT JOIN flowline.user_profiles AS profile ON profile.auth_user_id = audit.actor_auth_user_id
+         WHERE orders.created_by_auth_user_id = $1
+           AND audit.new_status IS NOT NULL
+       )
+      SELECT event_id, order_id, order_number, order_name, order_placed_at, current_status,
+              status, completed_by, completed_at,
+              EXTRACT(EPOCH FROM (completed_at - previous_at)) AS transition_duration_seconds,
+              EXTRACT(EPOCH FROM (COALESCE(next_at, clock_timestamp()) - completed_at)) AS status_duration_seconds,
+              next_at IS NULL AS current, comments, action
+       FROM status_events
+       ORDER BY completed_at DESC, order_number
+       LIMIT 500`,
+      [user.id],
+    )
+    return result.rows.map((row) => ({
+      eventId: row.event_id,
+      orderId: row.order_id,
+      orderNumber: row.order_number,
+      orderName: row.order_name,
+      orderPlacedAt: row.order_placed_at,
+      currentStatus: row.current_status,
+      status: row.status,
+      completedBy: row.completed_by,
+      completedAt: row.completed_at,
+      transitionDurationSeconds: row.transition_duration_seconds === null ? null : Number(row.transition_duration_seconds),
+      statusDurationSeconds: Number(row.status_duration_seconds),
+      current: row.current,
+      comments: row.comments,
+      action: row.action,
+    }))
   }
 
   async getOrder(user: AuthUser, orderId: string): Promise<CsrOrderDetail> {

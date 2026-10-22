@@ -72,6 +72,16 @@ export function registerCsrRoutes(
   authService: AuthService,
   csrService: CsrService,
 ) {
+  app.get('/api/v1/csr/order-status', async (request, reply) => {
+    try {
+      const user = await authenticatedUser(request, reply, authService)
+      if (!user) return
+      return { statuses: await csrService.listOrderStatuses(user) }
+    } catch (error) {
+      return sendCsrError(reply, error)
+    }
+  })
+
   app.get('/api/v1/reviewers/rd', async (request, reply) => {
     try {
       const user = await authenticatedUser(request, reply, authService)
