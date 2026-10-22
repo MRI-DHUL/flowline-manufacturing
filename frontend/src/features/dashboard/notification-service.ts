@@ -63,6 +63,14 @@ export async function markNotificationRead(notificationId: string) {
   await parseResponse<{ ok: true }>(response)
 }
 
+export async function deleteNotification(notificationId: string) {
+  const response = await fetch(`${getApiBaseUrl()}/api/v1/notifications/${notificationId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  await parseResponse<{ ok: true }>(response)
+}
+
 export function openNotificationStream(
   onNotification: (notification: DashboardNotification) => void,
   onDisconnect: () => void,

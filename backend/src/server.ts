@@ -6,6 +6,7 @@ import { PostgresDashboardService } from './dashboard-service.js'
 import { checkDatabase, createDatabasePool } from './database.js'
 import { getLoggerOptions } from './logger.js'
 import { NotificationHub, PostgresNotificationService } from './notification-service.js'
+import { PostgresRdService } from './rd-service.js'
 
 const config = getConfig()
 const pool = createDatabasePool(config.DATABASE_URL)
@@ -14,6 +15,7 @@ const dashboardService = new PostgresDashboardService(pool)
 const notificationService = new PostgresNotificationService(pool)
 const notificationHub = new NotificationHub()
 const csrService = new PostgresCsrService(pool, notificationHub)
+const rdService = new PostgresRdService(pool, notificationHub)
 const app = buildApp({
   frontendOrigin: config.FRONTEND_ORIGIN,
   secureCookies: config.NODE_ENV === 'production',
@@ -24,6 +26,7 @@ const app = buildApp({
   csrService,
   notificationService,
   notificationHub,
+  rdService,
 })
 
 const close = async (signal: string) => {

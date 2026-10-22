@@ -608,15 +608,32 @@ export class PostgresCsrService implements CsrService {
     const client = await this.pool.connect()
     try {
       await client.query('BEGIN')
+      const clarification = await client.query<{
+        requested_by_auth_user_id: string
+        stage: string
+        order_number: string
+        order_status: string
+      }>(
+        `SELECT clarification.requested_by_auth_user_id, clarification.stage,
+                orders.order_number, orders.status AS order_status
+         FROM flowline.clarification_requests AS clarification
+         JOIN flowline.orders AS orders ON orders.id = clarification.order_id
+         WHERE clarification.id = $1 AND clarification.order_id = $2
+           AND orders.created_by_auth_user_id = $3
+           AND clarification.status = 'OPEN'
+         FOR UPDATE OF clarification, orders`,
+        [clarificationId, orderId, user.id],
+      )
+      const request = clarification.rows[0]
+      if (!request) {
+        throw new CsrError(404, 'CLARIFICATION_NOT_FOUND', 'Open clarification request not found.')
+      }
       const updated = await client.query(
-        `UPDATE flowline.clarification_requests AS clarification
-         SET status = 'RESOLVED', response = $4,
+        `UPDATE flowline.clarification_requests
+         SET status = 'RESOLVED', response = $2,
            responded_by_auth_user_id = $3, responded_at = clock_timestamp()
-         FROM flowline.orders AS orders
-         WHERE clarification.id = $1 AND clarification.order_id = orders.id
-           AND orders.id = $2 AND orders.created_by_auth_user_id = $3
-           AND clarification.status = 'OPEN'`,
-        [clarificationId, orderId, user.id, response.trim()],
+         WHERE id = $1 AND status = 'OPEN'`,
+        [clarificationId, response.trim(), user.id],
       )
       if (updated.rowCount !== 1) {
         throw new CsrError(404, 'CLARIFICATION_NOT_FOUND', 'Open clarification request not found.')
@@ -626,7 +643,52 @@ export class PostgresCsrService implements CsrService {
          VALUES ($1, $2, 'CLARIFICATION_RESPONDED', jsonb_build_object('clarificationId', $3::text))`,
         [orderId, user.id, clarificationId],
       )
+      let notificationId: string | null = null
+      if (request.stage === 'R&D') {
+        const rdRole = await client.query<{ id: string }>(
+          `SELECT id FROM flowline.roles WHERE code = 'R&D'`,
+        )
+        await client.query(
+          `UPDATE flowline.orders
+           SET status = 'R&D Review', stage = 'R&D', owner_role_id = $2,
+               owner_auth_user_id = $3, version = version + 1
+           WHERE id = $1`,
+          [orderId, rdRole.rows[0]?.id ?? null, request.requested_by_auth_user_id],
+        )
+        await client.query(
+          `INSERT INTO flowline.audit_events (
+             order_id, actor_auth_user_id, action, previous_status, new_status, details
+           ) VALUES ($1, $2, 'ORDER_REASSIGNED_TO_R&D', $3, 'R&D Review',
+             jsonb_build_object('reviewerAuthUserId', $4::text))`,
+          [orderId, user.id, request.order_status, request.requested_by_auth_user_id],
+        )
+        const notification = await client.query<{ id: string }>(
+          `WITH notification AS (
+             INSERT INTO flowline.notifications (order_id, type, title, message)
+             VALUES ($1, 'CSR_CLARIFICATION_RESPONDED', 'Clarification response received',
+                     'Order ' || $2 || ' has been returned for R&D review.')
+             RETURNING id
+           )
+           INSERT INTO flowline.notification_recipients (notification_id, recipient_auth_user_id)
+           SELECT id, $3 FROM notification
+           RETURNING notification_id AS id`,
+          [orderId, request.order_number, request.requested_by_auth_user_id],
+        )
+        notificationId = notification.rows[0]?.id ?? null
+      }
       await client.query('COMMIT')
+      if (notificationId) {
+        this.notificationPublisher?.publish(request.requested_by_auth_user_id, {
+          id: notificationId,
+          orderId,
+          orderNumber: request.order_number,
+          type: 'CSR_CLARIFICATION_RESPONDED',
+          title: 'Clarification response received',
+          message: `Order ${request.order_number} has been returned for R&D review.`,
+          createdAt: new Date(),
+          readAt: null,
+        })
+      }
       return this.getOrder(user, orderId)
     } catch (error) {
       await client.query('ROLLBACK')

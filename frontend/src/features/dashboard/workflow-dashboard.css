@@ -135,6 +135,7 @@ html:has(.workflow-dashboard-page) body::-webkit-scrollbar {
 .workflow-notification-panel li span { color: #52647a; font-size: 10px; line-height: 1.4; }
 .workflow-notification-panel li small { color: var(--wf-muted); font-size: 8px; }
 .workflow-notification-empty { margin: 0; padding: 28px 15px; color: var(--wf-muted); font-size: 10px; text-align: center; }
+.workflow-notification-more { width: calc(100% - 20px); margin: 10px; }
 
 .workflow-body {
   display: grid;

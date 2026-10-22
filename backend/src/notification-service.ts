@@ -43,6 +43,7 @@ export class NotificationHub implements NotificationPublisher {
 export interface NotificationService {
   listForUser(user: AuthUser): Promise<NotificationItem[]>
   markRead(user: AuthUser, notificationId: string): Promise<void>
+  deleteForUser(user: AuthUser, notificationId: string): Promise<void>
 }
 
 export class NotificationError extends Error {
@@ -83,10 +84,19 @@ export class PostgresNotificationService implements NotificationService {
        FROM flowline.notification_recipients AS recipient
        JOIN flowline.notifications AS notification ON notification.id = recipient.notification_id
        LEFT JOIN flowline.orders AS orders ON orders.id = notification.order_id
-       WHERE recipient.recipient_auth_user_id = $1
+       WHERE (recipient.recipient_auth_user_id = $1
+          OR EXISTS (
+            SELECT 1
+            FROM flowline.user_profiles AS profile
+            JOIN flowline.user_roles AS user_role ON user_role.user_profile_id = profile.id
+            WHERE profile.auth_user_id = $1
+              AND profile.status = 'ACTIVE'
+              AND user_role.role_id = recipient.recipient_role_id
+          ))
+         AND recipient.hidden_at IS NULL
          AND notification.status = 'ACTIVE'
        ORDER BY recipient.read_at NULLS FIRST, notification.created_at DESC
-       LIMIT 50`,
+      LIMIT 200`,
       [user.id],
     )
     return result.rows.map((item) => ({
@@ -109,7 +119,40 @@ export class PostgresNotificationService implements NotificationService {
        FROM flowline.notifications AS notification
        WHERE recipient.notification_id = notification.id
          AND notification.id = $1
-         AND recipient.recipient_auth_user_id = $2
+         AND (recipient.recipient_auth_user_id = $2
+           OR EXISTS (
+             SELECT 1
+             FROM flowline.user_profiles AS profile
+             JOIN flowline.user_roles AS user_role ON user_role.user_profile_id = profile.id
+             WHERE profile.auth_user_id = $2
+               AND profile.status = 'ACTIVE'
+               AND user_role.role_id = recipient.recipient_role_id
+           ))
+         AND notification.status = 'ACTIVE'`,
+      [notificationId, user.id],
+    )
+    if (!result.rowCount) {
+      throw new NotificationError(404, 'NOTIFICATION_NOT_FOUND', 'Notification not found.')
+    }
+  }
+
+  async deleteForUser(user: AuthUser, notificationId: string) {
+    ensureActive(user)
+    const result = await this.pool.query(
+      `UPDATE flowline.notification_recipients AS recipient
+       SET hidden_at = COALESCE(recipient.hidden_at, clock_timestamp())
+       FROM flowline.notifications AS notification
+       WHERE recipient.notification_id = notification.id
+         AND notification.id = $1
+         AND (recipient.recipient_auth_user_id = $2
+           OR EXISTS (
+             SELECT 1
+             FROM flowline.user_profiles AS profile
+             JOIN flowline.user_roles AS user_role ON user_role.user_profile_id = profile.id
+             WHERE profile.auth_user_id = $2
+               AND profile.status = 'ACTIVE'
+               AND user_role.role_id = recipient.recipient_role_id
+           ))
          AND notification.status = 'ACTIVE'`,
       [notificationId, user.id],
     )

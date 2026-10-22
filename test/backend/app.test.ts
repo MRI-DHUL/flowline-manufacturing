@@ -8,6 +8,7 @@ import { CsrError } from '../../backend/src/csr-service.js'
 import type { CsrOrderDetail, CsrService } from '../../backend/src/csr-service.js'
 import { NotificationHub } from '../../backend/src/notification-service.js'
 import type { NotificationService } from '../../backend/src/notification-service.js'
+import type { RdService } from '../../backend/src/rd-service.js'
 
 const apps: ReturnType<typeof buildApp>[] = []
 
@@ -103,6 +104,21 @@ function createNotificationService(): NotificationService {
   return {
     listForUser: vi.fn(async () => []),
     markRead: vi.fn(async () => undefined),
+    deleteForUser: vi.fn(async () => undefined),
+  }
+}
+
+function createRdService(): RdService {
+  return {
+    listQueue: vi.fn(async () => []),
+    listPlanningUsers: vi.fn(async () => []),
+    getOrder: vi.fn(async () => { throw new Error('Not configured in route tests') }),
+    decide: vi.fn(async () => { throw new Error('Not configured in route tests') }),
+    downloadAttachment: vi.fn(async () => ({
+      fileName: 'specification.pdf',
+      mediaType: 'application/pdf',
+      content: Buffer.from('content'),
+    })),
   }
 }
 
@@ -115,6 +131,7 @@ function createAppOptions(authService = createAuthService()) {
     csrService: createCsrService(),
     notificationService: createNotificationService(),
     notificationHub: new NotificationHub(),
+    rdService: createRdService(),
     databaseCheck: async () => ({
       database: 'neondb',
       serverTime: new Date(),
@@ -525,6 +542,29 @@ describe('CSR order routes', () => {
 })
 
 describe('notification routes', () => {
+  it('accepts an authenticated live notification connection', async () => {
+    const authService = createAuthService()
+    authService.getSession = vi.fn(async () => ({
+      id: 'user-1', email: 'asha@example.com', displayName: 'Asha Menon', status: 'ACTIVE' as const, roles: ['CSR'],
+    }))
+    const app = buildApp(createAppOptions(authService))
+    apps.push(app)
+    await app.ready()
+
+    let readyMessage: Promise<string> | undefined
+    const socket = await app.injectWS('/api/v1/notifications/live', {
+      headers: { cookie: 'flowline_session=opaque-token' },
+    }, {
+      onOpen: (openSocket) => {
+        readyMessage = new Promise((resolve) => openSocket.once('message', (value) => resolve(value.toString())))
+      },
+    })
+    const message = await readyMessage
+
+    expect(JSON.parse(message)).toEqual({ type: 'ready' })
+    socket.close()
+  })
+
   it('lists notifications for an authenticated user', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
@@ -575,6 +615,79 @@ describe('notification routes', () => {
     expect(notificationService.markRead).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'user-1' }),
       '33333333-3333-4333-8333-333333333333',
+    )
+  })
+})
+
+describe('R&D routes', () => {
+  it('lists the authenticated R&D reviewer queue', async () => {
+    const authService = createAuthService()
+    authService.getSession = vi.fn(async () => ({
+      id: 'rd-user-1', email: 'rd@example.com', displayName: 'R&D Reviewer', status: 'ACTIVE' as const, roles: ['R&D'],
+    }))
+    const rdService = createRdService()
+    rdService.listQueue = vi.fn(async () => [])
+    const app = buildApp({ ...createAppOptions(authService), rdService })
+    apps.push(app)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/rd/orders',
+      cookies: { flowline_session: 'opaque-token' },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ orders: [] })
+    expect(rdService.listQueue).toHaveBeenCalledWith(expect.objectContaining({ id: 'rd-user-1', roles: ['R&D'] }))
+  })
+
+  it('rejects incomplete technical decisions at the route boundary', async () => {
+    const authService = createAuthService()
+    authService.getSession = vi.fn(async () => ({
+      id: 'rd-user-1', email: 'rd@example.com', displayName: 'R&D Reviewer', status: 'ACTIVE' as const, roles: ['R&D'],
+    }))
+    const rdService = createRdService()
+    const app = buildApp({ ...createAppOptions(authService), rdService })
+    apps.push(app)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/v1/rd/orders/${testOrder.id}/decision`,
+      cookies: { flowline_session: 'opaque-token' },
+      payload: { decision: 'APPROVED' },
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(rdService.decide).not.toHaveBeenCalled()
+  })
+
+  it('accepts clarification decisions without a Planning assignment', async () => {
+    const authService = createAuthService()
+    authService.getSession = vi.fn(async () => ({
+      id: 'rd-user-1', email: 'rd@example.com', displayName: 'R&D Reviewer', status: 'ACTIVE' as const, roles: ['R&D'],
+    }))
+    const rdService = createRdService()
+    rdService.decide = vi.fn(async () => null as never)
+    const app = buildApp({ ...createAppOptions(authService), rdService })
+    apps.push(app)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/v1/rd/orders/${testOrder.id}/decision`,
+      cookies: { flowline_session: 'opaque-token' },
+      payload: {
+        decision: 'CLARIFICATION_REQUESTED',
+        planningUserAuthUserId: '',
+        technicalComments: 'Need more details.',
+        clarificationQuestion: 'Please confirm the material specification.',
+      },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(rdService.decide).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'rd-user-1' }),
+      testOrder.id,
+      expect.objectContaining({ planningUserAuthUserId: null }),
     )
   })
 })

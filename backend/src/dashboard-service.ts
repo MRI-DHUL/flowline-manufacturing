@@ -133,7 +133,7 @@ export class PostgresDashboardService implements DashboardService {
     const visibility = `
       ($1 = 'MANAGER')
       OR ($1 = 'CSR' AND orders.created_by_auth_user_id = $2)
-      OR ($3::text IS NOT NULL AND orders.stage = $3)
+      OR ($3::text IS NOT NULL AND orders.stage = $3 AND orders.owner_auth_user_id = $2)
     `
 
     const [metricsResult, ordersResult, stagesResult, statusesResult, trendResult] = await Promise.all([

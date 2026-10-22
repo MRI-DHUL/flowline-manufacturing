@@ -13,6 +13,8 @@ import type { CsrService } from './csr-service.js'
 import type { DatabaseHealth } from './database.js'
 import { registerNotificationRoutes } from './notification-routes.js'
 import type { NotificationHub, NotificationService } from './notification-service.js'
+import { registerRdRoutes } from './rd-routes.js'
+import type { RdService } from './rd-service.js'
 
 type BuildAppOptions = {
   frontendOrigin: string
@@ -24,6 +26,7 @@ type BuildAppOptions = {
   csrService: CsrService
   notificationService: NotificationService
   notificationHub: NotificationHub
+  rdService: RdService
 }
 
 export function buildApp(options: BuildAppOptions) {
@@ -38,12 +41,15 @@ export function buildApp(options: BuildAppOptions) {
   app.register(multipart, {
     limits: { files: 1, fileSize: 5 * 1024 * 1024 },
   })
+  app.register(websocket)
 
   registerAuthRoutes(app, options.authService, options.secureCookies)
   registerDashboardRoutes(app, options.authService, options.dashboardService)
   registerCsrRoutes(app, options.authService, options.csrService)
-  app.register(websocket)
-  registerNotificationRoutes(app, options.authService, options.notificationService, options.notificationHub)
+  registerRdRoutes(app, options.authService, options.rdService)
+  app.after(() => {
+    registerNotificationRoutes(app, options.authService, options.notificationService, options.notificationHub)
+  })
 
   app.get('/health', async () => ({
     status: 'ok',

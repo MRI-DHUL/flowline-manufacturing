@@ -17,9 +17,11 @@ import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useToast } from '../../components/toast/useToast'
 import { LoadingScreen } from '../../components/loading/LoadingScreen'
+import { RdWorkspace } from '../rd/RdWorkspace'
 import { Button, MetricCard, SegmentedTabs, Select, TextInput } from '../../components/ui'
 import { CsrOrdersWorkspace } from '../csr/CsrOrdersWorkspace'
 import { DashboardAnalytics } from './DashboardAnalytics'
+import { NotificationsPage } from './NotificationsPage'
 import { roleWorkspaces } from './dashboard-config'
 import {
   DashboardRequestError,
@@ -345,7 +347,9 @@ export function WorkflowDashboardPage() {
   }
 
   const workspace = roleWorkspaces[data.role]
-  const activeView = location.pathname.startsWith('/dashboard/orders') ? 'orders' : 'overview'
+  const activeView = location.pathname.startsWith('/dashboard/orders')
+    ? 'orders'
+    : location.pathname.startsWith('/dashboard/notifications') ? 'notifications' : 'overview'
   const routeParts = location.pathname.split('/').filter(Boolean)
   const csrOrderId = routeParts[2] && routeParts[2] !== 'new' ? routeParts[2] : null
   const csrMode = routeParts[2] === 'new'
@@ -372,6 +376,8 @@ export function WorkflowDashboardPage() {
     if (!data) return
     if (data.role === 'CSR') {
       navigate('/dashboard/orders/new')
+    } else if (data.role === 'R&D') {
+      navigate('/dashboard/orders')
     } else if (data.orders[0]) {
       setSelectedId(data.orders[0].id)
     }
@@ -401,7 +407,7 @@ export function WorkflowDashboardPage() {
                 <header><div><strong>Notifications</strong><small>{unreadNotifications.length ? `${unreadNotifications.length} unread` : 'All caught up'}</small></div><CheckCheck size={18} aria-hidden="true" /></header>
                 {notifications.length ? (
                   <ul>
-                    {notifications.map((notification) => (
+                    {notifications.slice(0, 5).map((notification) => (
                       <li key={notification.id} data-unread={!notification.readAt}>
                         <button type="button" onClick={() => void openNotification(notification)}>
                           <strong>{notification.title}</strong>
@@ -412,6 +418,7 @@ export function WorkflowDashboardPage() {
                     ))}
                   </ul>
                 ) : <p className="workflow-notification-empty">No notifications yet.</p>}
+                {notifications.length > 5 ? <Button className="workflow-notification-more" variant="quiet" size="sm" type="button" onClick={() => { setNotificationsOpen(false); navigate('/dashboard/notifications') }}>More notifications</Button> : null}
               </section>
             ) : null}
           </div>
@@ -450,6 +457,8 @@ export function WorkflowDashboardPage() {
             <h1>
               {activeView === 'overview'
                 ? workspace.heading
+                : activeView === 'notifications'
+                  ? 'Notifications'
                 : csrMode === 'new'
                   ? 'Create new order'
                   : csrMode === 'edit'
@@ -459,6 +468,8 @@ export function WorkflowDashboardPage() {
             <span>
               {activeView === 'overview'
                 ? workspace.description
+                : activeView === 'notifications'
+                  ? 'Review, read, and manage all workspace notifications.'
                 : 'Search, filter, and review orders assigned to your workspace.'}
             </span>
           </div>
@@ -470,7 +481,7 @@ export function WorkflowDashboardPage() {
           ) : null}
         </section>
 
-        {activeView === 'overview' ? (
+          {activeView === 'notifications' ? <NotificationsPage /> : activeView === 'overview' ? (
           <>
             <section className="workflow-metrics" aria-label="Workspace analytics">
               {metrics.map(({ label, value, icon: Icon }) => <MetricCard key={label} label={label} value={value} icon={Icon} />)}
@@ -490,6 +501,8 @@ export function WorkflowDashboardPage() {
               orderId={csrOrderId}
               onBackToOrders={() => navigate('/dashboard/orders')}
             />
+          ) : data.role === 'R&D' ? (
+            <RdWorkspace />
           ) : (
             <section className="workflow-workbench workflow-orders-view" aria-label="Order workspace">
           <aside className="workflow-queue">

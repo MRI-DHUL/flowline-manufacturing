@@ -77,4 +77,16 @@ export function registerNotificationRoutes(
       return sendNotificationError(reply, error)
     }
   })
+
+  app.delete('/api/v1/notifications/:notificationId', async (request, reply) => {
+    try {
+      const user = await authenticatedUser(request, reply, authService)
+      if (!user) return
+      const { notificationId } = notificationParams.parse(request.params)
+      await notificationService.deleteForUser(user, notificationId)
+      return { ok: true }
+    } catch (error) {
+      return sendNotificationError(reply, error)
+    }
+  })
 }
