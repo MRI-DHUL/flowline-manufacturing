@@ -25,6 +25,12 @@ import { registerShippingRoutes } from './shipping-routes.js'
 import type { ShippingService } from './shipping-service.js'
 import { registerHoldRoutes } from './hold-routes.js'
 import type { HoldService } from './hold-service.js'
+import { registerManagerRoutes } from './manager-routes.js'
+import type { ManagerService } from './manager-service.js'
+import { registerAdminRoutes } from './admin-routes.js'
+import type { AdminService } from './admin-service.js'
+import { registerActivityRoutes } from './activity-routes.js'
+import type { PostgresActivityService } from './activity-service.js'
 
 type BuildAppOptions = {
   frontendOrigin: string
@@ -42,13 +48,16 @@ type BuildAppOptions = {
   pressService: PressService
   shippingService: ShippingService
   holdService?: HoldService
+  managerService?: ManagerService
+  adminService?: AdminService
+  activityService?: PostgresActivityService
 }
 
 export function buildApp(options: BuildAppOptions) {
   const app = Fastify({ logger: options.logger ?? false })
 
   app.register(cors, {
-    origin: options.frontendOrigin,
+    origin: [options.frontendOrigin, 'http://127.0.0.1:5174'],
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   })
@@ -67,6 +76,9 @@ export function buildApp(options: BuildAppOptions) {
   registerPressRoutes(app, options.authService, options.pressService)
   registerShippingRoutes(app, options.authService, options.shippingService)
   if (options.holdService) registerHoldRoutes(app, options.authService, options.holdService)
+  if (options.managerService) registerManagerRoutes(app, options.authService, options.managerService)
+  if (options.adminService) registerAdminRoutes(app, options.authService, options.adminService)
+  if (options.activityService) registerActivityRoutes(app, options.authService, options.activityService)
   app.after(() => {
     registerNotificationRoutes(app, options.authService, options.notificationService, options.notificationHub)
   })

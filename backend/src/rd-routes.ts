@@ -14,10 +14,7 @@ const decisionSchema = z.object({
   materialRecommendation: z.string().max(3000).nullable().optional(),
   constraintsAndRisks: z.string().max(3000).nullable().optional(),
   clarificationQuestion: z.string().max(5000).nullable().optional(),
-  planningUserAuthUserId: z.preprocess(
-    (value) => value === '' ? null : value,
-    z.uuid().nullable().optional(),
-  ),
+  planningUserAuthUserId: z.preprocess((value) => (value === '' ? null : value), z.uuid().nullable().optional()),
 })
 
 async function authenticatedUser(

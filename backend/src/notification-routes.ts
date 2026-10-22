@@ -8,11 +8,7 @@ import type { NotificationHub } from './notification-service.js'
 
 const notificationParams = z.object({ notificationId: z.uuid() })
 
-async function authenticatedUser(
-  request: { cookies: Record<string, string | undefined> },
-  reply: FastifyReply,
-  authService: AuthService,
-) {
+async function authenticatedUser(request: { cookies: Record<string, string | undefined> }, reply: FastifyReply, authService: AuthService) {
   const token = request.cookies[sessionCookieName]
   if (!token) {
     reply.code(401).send({ error: { code: 'UNAUTHENTICATED', message: 'Authentication required.' } })

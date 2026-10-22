@@ -1,8 +1,6 @@
 import type { FastifyServerOptions } from 'fastify'
 
-export function getLoggerOptions(
-  level: string,
-): FastifyServerOptions['logger'] {
+export function getLoggerOptions(level: string): FastifyServerOptions['logger'] {
   return {
     level,
     base: { service: 'flowline-backend' },

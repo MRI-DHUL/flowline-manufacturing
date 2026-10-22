@@ -108,9 +108,7 @@ async function request<T>(path: string, init?: RequestInit) {
   const response = await fetch(`${apiBase()}${path}`, {
     credentials: 'include',
     ...init,
-    headers: init?.body instanceof FormData
-      ? init.headers
-      : { 'content-type': 'application/json', ...init?.headers },
+    headers: init?.body instanceof FormData ? init.headers : { 'content-type': 'application/json', ...init?.headers },
   })
   return parse<T>(response)
 }
@@ -164,10 +162,7 @@ export async function uploadCsrAttachment(orderId: string, file: File) {
 }
 
 export async function deleteCsrAttachment(orderId: string, attachmentId: string) {
-  const result = await request<{ order: CsrOrderDetail }>(
-    `/api/v1/orders/${orderId}/attachments/${attachmentId}`,
-    { method: 'DELETE' },
-  )
+  const result = await request<{ order: CsrOrderDetail }>(`/api/v1/orders/${orderId}/attachments/${attachmentId}`, { method: 'DELETE' })
   return result.order
 }
 
@@ -184,15 +179,11 @@ export async function downloadCsrAttachment(orderId: string, attachmentId: strin
   URL.revokeObjectURL(url)
 }
 
-export async function respondToCsrClarification(
-  orderId: string,
-  clarificationId: string,
-  response: string,
-) {
-  const result = await request<{ order: CsrOrderDetail }>(
-    `/api/v1/orders/${orderId}/clarifications/${clarificationId}/respond`,
-    { method: 'POST', body: JSON.stringify({ response }) },
-  )
+export async function respondToCsrClarification(orderId: string, clarificationId: string, response: string) {
+  const result = await request<{ order: CsrOrderDetail }>(`/api/v1/orders/${orderId}/clarifications/${clarificationId}/respond`, {
+    method: 'POST',
+    body: JSON.stringify({ response }),
+  })
   return result.order
 }
 

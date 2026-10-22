@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  createSessionToken,
-  hashPassword,
-  hashSessionToken,
-  verifyPassword,
-} from '../../backend/src/auth-crypto.js'
+import { createSessionToken, hashPassword, hashSessionToken, verifyPassword } from '../../backend/src/auth-crypto.js'
 
 describe('auth crypto', () => {
   it('hashes passwords with Argon2id and verifies only the correct value', async () => {

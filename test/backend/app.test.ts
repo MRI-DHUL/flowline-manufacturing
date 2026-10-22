@@ -117,8 +117,12 @@ function createRdService(): RdService {
   return {
     listQueue: vi.fn(async () => []),
     listPlanningUsers: vi.fn(async () => []),
-    getOrder: vi.fn(async () => { throw new Error('Not configured in route tests') }),
-    decide: vi.fn(async () => { throw new Error('Not configured in route tests') }),
+    getOrder: vi.fn(async () => {
+      throw new Error('Not configured in route tests')
+    }),
+    decide: vi.fn(async () => {
+      throw new Error('Not configured in route tests')
+    }),
     downloadAttachment: vi.fn(async () => ({
       fileName: 'specification.pdf',
       mediaType: 'application/pdf',
@@ -131,9 +135,15 @@ function createPlanningService(): PlanningService {
   return {
     listQueue: vi.fn(async () => []),
     listResources: vi.fn(async () => ({ productionLines: [], pressUsers: [] })),
-    getOrder: vi.fn(async () => { throw new Error('Not configured in route tests') }),
-    saveAssessment: vi.fn(async () => { throw new Error('Not configured in route tests') }),
-    release: vi.fn(async () => { throw new Error('Not configured in route tests') }),
+    getOrder: vi.fn(async () => {
+      throw new Error('Not configured in route tests')
+    }),
+    saveAssessment: vi.fn(async () => {
+      throw new Error('Not configured in route tests')
+    }),
+    release: vi.fn(async () => {
+      throw new Error('Not configured in route tests')
+    }),
     downloadAttachment: vi.fn(async () => ({
       fileName: 'specification.pdf',
       mediaType: 'application/pdf',
@@ -157,7 +167,9 @@ function createIssueService(): IssueService {
 }
 
 function createPressService(): PressService {
-  const unavailable = async () => { throw new Error('Not configured in route tests') }
+  const unavailable = async () => {
+    throw new Error('Not configured in route tests')
+  }
   return {
     listQueue: vi.fn(async () => []),
     listShippingUsers: vi.fn(async () => []),
@@ -171,7 +183,9 @@ function createPressService(): PressService {
 }
 
 function createShippingService(): ShippingService {
-  const unavailable = async () => { throw new Error('Not configured in route tests') }
+  const unavailable = async () => {
+    throw new Error('Not configured in route tests')
+  }
   return {
     listQueue: vi.fn(async () => []),
     getOrder: vi.fn(unavailable),
@@ -286,7 +300,7 @@ describe('authentication routes', () => {
       url: '/api/v1/auth/register',
       payload: {
         fullName: 'Asha Menon',
-        email: 'asha@example.com',
+        email: 'asha@flowline.com',
         password: 'secure-pass',
         role: 'SYSTEM_ADMIN',
       },
@@ -294,11 +308,11 @@ describe('authentication routes', () => {
 
     expect(response.statusCode).toBe(201)
     expect(response.json()).toMatchObject({
-      user: { email: 'asha@example.com', status: 'PENDING' },
+      user: { email: 'asha@flowline.com', status: 'PENDING' },
     })
     expect(authService.register).toHaveBeenCalledWith({
       fullName: 'Asha Menon',
-      email: 'asha@example.com',
+      email: 'asha@flowline.com',
       password: 'secure-pass',
     })
   })
@@ -479,16 +493,17 @@ describe('CSR order routes', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toMatchObject({ orders: [{ orderNumber: 'FO-2026-001001' }] })
-    expect(csrService.listOrders).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'user-1' }),
-      { status: 'Draft' },
-    )
+    expect(csrService.listOrders).toHaveBeenCalledWith(expect.objectContaining({ id: 'user-1' }), { status: 'Draft' })
   })
 
   it('creates an owned draft', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'user-1', email: 'asha@example.com', displayName: 'Asha Menon', status: 'ACTIVE' as const, roles: ['CSR'],
+      id: 'user-1',
+      email: 'asha@example.com',
+      displayName: 'Asha Menon',
+      status: 'ACTIVE' as const,
+      roles: ['CSR'],
     }))
     const csrService = createCsrService()
     const app = buildApp({ ...createAppOptions(authService), csrService })
@@ -502,16 +517,17 @@ describe('CSR order routes', () => {
     })
 
     expect(response.statusCode).toBe(201)
-    expect(csrService.createDraft).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'user-1' }),
-      { customerName: 'GreenBite Foods' },
-    )
+    expect(csrService.createDraft).toHaveBeenCalledWith(expect.objectContaining({ id: 'user-1' }), { customerName: 'GreenBite Foods' })
   })
 
   it('accepts an incomplete draft with empty date and nullable quantity', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'user-1', email: 'asha@example.com', displayName: 'Asha Menon', status: 'ACTIVE' as const, roles: ['CSR'],
+      id: 'user-1',
+      email: 'asha@example.com',
+      displayName: 'Asha Menon',
+      status: 'ACTIVE' as const,
+      roles: ['CSR'],
     }))
     const csrService = createCsrService()
     const app = buildApp({ ...createAppOptions(authService), csrService })
@@ -539,7 +555,11 @@ describe('CSR order routes', () => {
   it('returns controlled submission field errors', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'user-1', email: 'asha@example.com', displayName: 'Asha Menon', status: 'ACTIVE' as const, roles: ['CSR'],
+      id: 'user-1',
+      email: 'asha@example.com',
+      displayName: 'Asha Menon',
+      status: 'ACTIVE' as const,
+      roles: ['CSR'],
     }))
     const csrService = createCsrService()
     csrService.submitOrder = vi.fn(async () => {
@@ -567,7 +587,11 @@ describe('CSR order routes', () => {
   it('lists active R&D reviewers and assigns a selected reviewer', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'user-1', email: 'asha@example.com', displayName: 'Asha Menon', status: 'ACTIVE' as const, roles: ['CSR'],
+      id: 'user-1',
+      email: 'asha@example.com',
+      displayName: 'Asha Menon',
+      status: 'ACTIVE' as const,
+      roles: ['CSR'],
     }))
     const csrService = createCsrService()
     const reviewer = {
@@ -598,11 +622,7 @@ describe('CSR order routes', () => {
     expect(listResponse.statusCode).toBe(200)
     expect(listResponse.json()).toEqual({ reviewers: [reviewer] })
     expect(assignResponse.statusCode).toBe(200)
-    expect(csrService.assignRdReviewer).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'user-1' }),
-      testOrder.id,
-      reviewer.authUserId,
-    )
+    expect(csrService.assignRdReviewer).toHaveBeenCalledWith(expect.objectContaining({ id: 'user-1' }), testOrder.id, reviewer.authUserId)
   })
 })
 
@@ -610,20 +630,28 @@ describe('notification routes', () => {
   it('accepts an authenticated live notification connection', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'user-1', email: 'asha@example.com', displayName: 'Asha Menon', status: 'ACTIVE' as const, roles: ['CSR'],
+      id: 'user-1',
+      email: 'asha@example.com',
+      displayName: 'Asha Menon',
+      status: 'ACTIVE' as const,
+      roles: ['CSR'],
     }))
     const app = buildApp(createAppOptions(authService))
     apps.push(app)
     await app.ready()
 
     let readyMessage: Promise<string> | undefined
-    const socket = await app.injectWS('/api/v1/notifications/live', {
-      headers: { cookie: 'flowline_session=opaque-token' },
-    }, {
-      onOpen: (openSocket) => {
-        readyMessage = new Promise((resolve) => openSocket.once('message', (value) => resolve(value.toString())))
+    const socket = await app.injectWS(
+      '/api/v1/notifications/live',
+      {
+        headers: { cookie: 'flowline_session=opaque-token' },
       },
-    })
+      {
+        onOpen: (openSocket) => {
+          readyMessage = new Promise((resolve) => openSocket.once('message', (value) => resolve(value.toString())))
+        },
+      },
+    )
     const message = await readyMessage
 
     expect(JSON.parse(message)).toEqual({ type: 'ready' })
@@ -633,19 +661,25 @@ describe('notification routes', () => {
   it('lists notifications for an authenticated user', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'user-1', email: 'asha@example.com', displayName: 'Asha Menon', status: 'ACTIVE' as const, roles: ['CSR'],
+      id: 'user-1',
+      email: 'asha@example.com',
+      displayName: 'Asha Menon',
+      status: 'ACTIVE' as const,
+      roles: ['CSR'],
     }))
     const notificationService = createNotificationService()
-    notificationService.listForUser = vi.fn(async () => [{
-      id: '33333333-3333-4333-8333-333333333333',
-      orderId: testOrder.id,
-      orderNumber: testOrder.orderNumber,
-      type: 'ORDER_SUBMITTED',
-      title: 'New order ready for R&D review',
-      message: 'Order FO-2026-001001 has been submitted for technical review.',
-      createdAt: new Date('2026-10-22T08:00:00.000Z'),
-      readAt: null,
-    }])
+    notificationService.listForUser = vi.fn(async () => [
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        orderId: testOrder.id,
+        orderNumber: testOrder.orderNumber,
+        type: 'ORDER_SUBMITTED',
+        title: 'New order ready for R&D review',
+        message: 'Order FO-2026-001001 has been submitted for technical review.',
+        createdAt: new Date('2026-10-22T08:00:00.000Z'),
+        readAt: null,
+      },
+    ])
     const app = buildApp({ ...createAppOptions(authService), notificationService })
     apps.push(app)
 
@@ -663,7 +697,11 @@ describe('notification routes', () => {
   it('marks an owned notification as read', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'user-1', email: 'asha@example.com', displayName: 'Asha Menon', status: 'ACTIVE' as const, roles: ['CSR'],
+      id: 'user-1',
+      email: 'asha@example.com',
+      displayName: 'Asha Menon',
+      status: 'ACTIVE' as const,
+      roles: ['CSR'],
     }))
     const notificationService = createNotificationService()
     const app = buildApp({ ...createAppOptions(authService), notificationService })
@@ -688,7 +726,11 @@ describe('R&D routes', () => {
   it('lists the authenticated R&D reviewer queue', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'rd-user-1', email: 'rd@example.com', displayName: 'R&D Reviewer', status: 'ACTIVE' as const, roles: ['R&D'],
+      id: 'rd-user-1',
+      email: 'rd@example.com',
+      displayName: 'R&D Reviewer',
+      status: 'ACTIVE' as const,
+      roles: ['R&D'],
     }))
     const rdService = createRdService()
     rdService.listQueue = vi.fn(async () => [])
@@ -709,7 +751,11 @@ describe('R&D routes', () => {
   it('rejects incomplete technical decisions at the route boundary', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'rd-user-1', email: 'rd@example.com', displayName: 'R&D Reviewer', status: 'ACTIVE' as const, roles: ['R&D'],
+      id: 'rd-user-1',
+      email: 'rd@example.com',
+      displayName: 'R&D Reviewer',
+      status: 'ACTIVE' as const,
+      roles: ['R&D'],
     }))
     const rdService = createRdService()
     const app = buildApp({ ...createAppOptions(authService), rdService })
@@ -729,7 +775,11 @@ describe('R&D routes', () => {
   it('accepts clarification decisions without a Planning assignment', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'rd-user-1', email: 'rd@example.com', displayName: 'R&D Reviewer', status: 'ACTIVE' as const, roles: ['R&D'],
+      id: 'rd-user-1',
+      email: 'rd@example.com',
+      displayName: 'R&D Reviewer',
+      status: 'ACTIVE' as const,
+      roles: ['R&D'],
     }))
     const rdService = createRdService()
     rdService.decide = vi.fn(async () => null as never)
@@ -761,7 +811,11 @@ describe('Planning routes', () => {
   it('lists the authenticated planner queue', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'planner-1', email: 'planner@example.com', displayName: 'Planner', status: 'ACTIVE' as const, roles: ['PLANNING'],
+      id: 'planner-1',
+      email: 'planner@example.com',
+      displayName: 'Planner',
+      status: 'ACTIVE' as const,
+      roles: ['PLANNING'],
     }))
     const planningService = createPlanningService()
     const app = buildApp({ ...createAppOptions(authService), planningService })
@@ -781,7 +835,11 @@ describe('Planning routes', () => {
   it('forwards complete release checks and Press assignment', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'planner-1', email: 'planner@example.com', displayName: 'Planner', status: 'ACTIVE' as const, roles: ['PLANNING'],
+      id: 'planner-1',
+      email: 'planner@example.com',
+      displayName: 'Planner',
+      status: 'ACTIVE' as const,
+      roles: ['PLANNING'],
     }))
     const planningService = createPlanningService()
     planningService.release = vi.fn(async () => null as never)
@@ -818,7 +876,11 @@ describe('Issue escalation routes', () => {
   it('reports an order issue for an authenticated operational user', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'press-user-1', email: 'press@example.com', displayName: 'Press Operator', status: 'ACTIVE' as const, roles: ['PRESS'],
+      id: 'press-user-1',
+      email: 'press@example.com',
+      displayName: 'Press Operator',
+      status: 'ACTIVE' as const,
+      roles: ['PRESS'],
     }))
     const issueService = createIssueService()
     const app = buildApp({ ...createAppOptions(authService), issueService })
@@ -843,7 +905,11 @@ describe('Issue escalation routes', () => {
   it('rejects an issue message that is too short', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'planner-1', email: 'planner@example.com', displayName: 'Planner', status: 'ACTIVE' as const, roles: ['PLANNING'],
+      id: 'planner-1',
+      email: 'planner@example.com',
+      displayName: 'Planner',
+      status: 'ACTIVE' as const,
+      roles: ['PLANNING'],
     }))
     const issueService = createIssueService()
     const app = buildApp({ ...createAppOptions(authService), issueService })
@@ -865,7 +931,11 @@ describe('Press routes', () => {
   it('lists the authenticated Press user queue', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'press-user-1', email: 'press@example.com', displayName: 'Press Operator', status: 'ACTIVE' as const, roles: ['PRESS'],
+      id: 'press-user-1',
+      email: 'press@example.com',
+      displayName: 'Press Operator',
+      status: 'ACTIVE' as const,
+      roles: ['PRESS'],
     }))
     const pressService = createPressService()
     const app = buildApp({ ...createAppOptions(authService), pressService })
@@ -881,7 +951,11 @@ describe('Press routes', () => {
   it('forwards completed quantities and the selected Shipping user', async () => {
     const authService = createAuthService()
     authService.getSession = vi.fn(async () => ({
-      id: 'press-user-1', email: 'press@example.com', displayName: 'Press Operator', status: 'ACTIVE' as const, roles: ['PRESS'],
+      id: 'press-user-1',
+      email: 'press@example.com',
+      displayName: 'Press Operator',
+      status: 'ACTIVE' as const,
+      roles: ['PRESS'],
     }))
     const pressService = createPressService()
     pressService.complete = vi.fn(async () => null as never)
@@ -908,7 +982,13 @@ describe('Press routes', () => {
 describe('Shipping routes', () => {
   it('lists the authenticated Shipping user queue', async () => {
     const authService = createAuthService()
-    authService.getSession = vi.fn(async () => ({ id: 'shipping-1', email: 'shipping@example.com', displayName: 'Shipping User', status: 'ACTIVE' as const, roles: ['SHIPPING'] }))
+    authService.getSession = vi.fn(async () => ({
+      id: 'shipping-1',
+      email: 'shipping@example.com',
+      displayName: 'Shipping User',
+      status: 'ACTIVE' as const,
+      roles: ['SHIPPING'],
+    }))
     const shippingService = createShippingService()
     const app = buildApp({ ...createAppOptions(authService), shippingService })
     apps.push(app)
@@ -920,13 +1000,31 @@ describe('Shipping routes', () => {
 
   it('forwards complete dispatch details', async () => {
     const authService = createAuthService()
-    authService.getSession = vi.fn(async () => ({ id: 'shipping-1', email: 'shipping@example.com', displayName: 'Shipping User', status: 'ACTIVE' as const, roles: ['SHIPPING'] }))
+    authService.getSession = vi.fn(async () => ({
+      id: 'shipping-1',
+      email: 'shipping@example.com',
+      displayName: 'Shipping User',
+      status: 'ACTIVE' as const,
+      roles: ['SHIPPING'],
+    }))
     const shippingService = createShippingService()
     shippingService.dispatch = vi.fn(async () => null as never)
     const app = buildApp({ ...createAppOptions(authService), shippingService })
     apps.push(app)
-    const payload = { carrier: 'Flowline Logistics', trackingOrVehicleNumber: 'TN-01-AB-1234', dispatchAt: '2026-10-22T12:00:00.000Z', shippedQuantity: 950, destination: 'Chennai', expectedDeliveryAt: '2026-10-23T12:00:00.000Z' }
-    const response = await app.inject({ method: 'POST', url: `/api/v1/shipping/orders/${testOrder.id}/dispatch`, cookies: { flowline_session: 'opaque-token' }, payload })
+    const payload = {
+      carrier: 'Flowline Logistics',
+      trackingOrVehicleNumber: 'TN-01-AB-1234',
+      dispatchAt: '2026-10-22T12:00:00.000Z',
+      shippedQuantity: 950,
+      destination: 'Chennai',
+      expectedDeliveryAt: '2026-10-23T12:00:00.000Z',
+    }
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/v1/shipping/orders/${testOrder.id}/dispatch`,
+      cookies: { flowline_session: 'opaque-token' },
+      payload,
+    })
     expect(response.statusCode).toBe(200)
     expect(shippingService.dispatch).toHaveBeenCalledWith(expect.objectContaining({ id: 'shipping-1' }), testOrder.id, payload)
   })

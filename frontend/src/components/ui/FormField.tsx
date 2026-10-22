@@ -18,7 +18,10 @@ export function FormField({
 }) {
   return (
     <label className={cx('ui-field', error && 'invalid', className)}>
-      <span>{label}{required ? ' *' : ''}</span>
+      <span>
+        {label}
+        {required ? ' *' : ''}
+      </span>
       {children}
       {error ? <small className="ui-field-error">{error}</small> : null}
       {hint ? <small className="ui-field-hint">{hint}</small> : null}

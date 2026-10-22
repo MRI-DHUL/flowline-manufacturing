@@ -79,7 +79,6 @@ export type PlanningUser = {
   email: string
 }
 
-
 export type RdAttachment = {
   fileName: string
   mediaType: string
@@ -258,17 +257,28 @@ export class PostgresRdService implements RdService {
         [orderId],
       ),
       this.pool.query<{
-        id: string; stage: string; question: string; status: string; requested_at: Date
-        response: string | null; responded_at: Date | null
+        id: string
+        stage: string
+        question: string
+        status: string
+        requested_at: Date
+        response: string | null
+        responded_at: Date | null
       }>(
         `SELECT id, stage, question, status, requested_at, response, responded_at
          FROM flowline.clarification_requests WHERE order_id = $1 ORDER BY requested_at DESC`,
         [orderId],
       ),
       this.pool.query<{
-        id: string; decision: string; technical_comments: string; tooling_requirements: string | null
-        material_recommendation: string | null; constraints_and_risks: string | null
-        reviewer_auth_user_id: string; reviewer_name: string; decided_at: Date
+        id: string
+        decision: string
+        technical_comments: string
+        tooling_requirements: string | null
+        material_recommendation: string | null
+        constraints_and_risks: string | null
+        reviewer_auth_user_id: string
+        reviewer_name: string
+        decided_at: Date
       }>(
         `SELECT review.id, review.decision, review.technical_comments,
                 review.tooling_requirements, review.material_recommendation,
@@ -281,8 +291,12 @@ export class PostgresRdService implements RdService {
         [orderId],
       ),
       this.pool.query<{
-        id: string; action: string; previous_status: string | null; new_status: string | null
-        reason: string | null; occurred_at: Date
+        id: string
+        action: string
+        previous_status: string | null
+        new_status: string | null
+        reason: string | null
+        occurred_at: Date
       }>(
         `SELECT id::text, action, previous_status, new_status, reason, occurred_at
          FROM flowline.audit_events WHERE order_id = $1 ORDER BY occurred_at DESC`,
@@ -364,18 +378,19 @@ export class PostgresRdService implements RdService {
         throw new RdError(422, 'DECISION_INCOMPLETE', 'Select an active Planning user.', ['planningUserAuthUserId'])
       }
 
-      const nextStatus = input.decision === 'APPROVED'
-        ? 'Planning Review'
-        : input.decision === 'REJECTED'
-          ? 'Cancelled'
-          : input.decision === 'ON_HOLD' ? 'On Hold' : 'R&D Review'
+      const nextStatus =
+        input.decision === 'APPROVED'
+          ? 'Planning Review'
+          : input.decision === 'REJECTED'
+            ? 'Cancelled'
+            : input.decision === 'ON_HOLD'
+              ? 'On Hold'
+              : 'R&D Review'
       const nextStage = input.decision === 'APPROVED' ? 'Planning' : 'CSR'
-      const planningRole = input.decision === 'APPROVED'
-        ? await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'PLANNING'`)
-        : null
-      const csrRole = input.decision !== 'APPROVED'
-        ? await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'CSR'`)
-        : null
+      const planningRole =
+        input.decision === 'APPROVED' ? await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'PLANNING'`) : null
+      const csrRole =
+        input.decision !== 'APPROVED' ? await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'CSR'`) : null
       if (input.decision === 'APPROVED') {
         const planner = await client.query<{ auth_user_id: string }>(
           `SELECT profile.auth_user_id
@@ -394,16 +409,28 @@ export class PostgresRdService implements RdService {
            order_id, reviewer_auth_user_id, decision, technical_comments,
            tooling_requirements, material_recommendation, constraints_and_risks
          ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [orderId, user.id, input.decision, comments, input.toolingRequirements?.trim() || null,
-          input.materialRecommendation?.trim() || null, input.constraintsAndRisks?.trim() || null],
+        [
+          orderId,
+          user.id,
+          input.decision,
+          comments,
+          input.toolingRequirements?.trim() || null,
+          input.materialRecommendation?.trim() || null,
+          input.constraintsAndRisks?.trim() || null,
+        ],
       )
       await client.query(
         `UPDATE flowline.orders
          SET status = $2, stage = $3,
              owner_role_id = $4, owner_auth_user_id = $5, version = version + 1
          WHERE id = $1`,
-        [orderId, nextStatus, nextStage, planningRole?.rows[0]?.id ?? csrRole?.rows[0]?.id ?? null,
-          input.decision === 'APPROVED' ? input.planningUserAuthUserId : order.created_by_auth_user_id],
+        [
+          orderId,
+          nextStatus,
+          nextStage,
+          planningRole?.rows[0]?.id ?? csrRole?.rows[0]?.id ?? null,
+          input.decision === 'APPROVED' ? input.planningUserAuthUserId : order.created_by_auth_user_id,
+        ],
       )
       if (input.decision === 'CLARIFICATION_REQUESTED') {
         await client.query(
@@ -420,7 +447,7 @@ export class PostgresRdService implements RdService {
         [orderId, user.id, `RD_${input.decision}`, order.status, nextStatus, comments, input.decision],
       )
 
-      const recipientUserId = input.decision === 'APPROVED' ? input.planningUserAuthUserId ?? null : order.created_by_auth_user_id
+      const recipientUserId = input.decision === 'APPROVED' ? (input.planningUserAuthUserId ?? null) : order.created_by_auth_user_id
       const recipientRoleId = null
       const notificationResult = await client.query<{ id: string }>(
         `WITH notification AS (
@@ -432,26 +459,34 @@ export class PostgresRdService implements RdService {
          )
          SELECT notification.id, $5, $6 FROM notification
          RETURNING notification_id AS id`,
-        [orderId, `RD_${input.decision}`, `R&D decision recorded for ${order.order_number}`,
+        [
+          orderId,
+          `RD_${input.decision}`,
+          `R&D decision recorded for ${order.order_number}`,
           input.decision === 'APPROVED'
             ? `Order ${order.order_number} is approved and assigned to Planning.`
             : `Order ${order.order_number} requires CSR follow-up: ${nextStatus}.`,
-          recipientUserId, recipientRoleId],
+          recipientUserId,
+          recipientRoleId,
+        ],
       )
       await client.query('COMMIT')
       const notificationId = notificationResult.rows[0]?.id
-      const notification = notificationId ? {
-        id: notificationId,
-        orderId,
-        orderNumber: order.order_number,
-        type: `RD_${input.decision}`,
-        title: `R&D decision recorded for ${order.order_number}`,
-        message: input.decision === 'APPROVED'
-          ? `Order ${order.order_number} is approved and assigned to Planning.`
-          : `Order ${order.order_number} requires CSR follow-up: ${nextStatus}.`,
-        createdAt: new Date(),
-        readAt: null,
-      } : null
+      const notification = notificationId
+        ? {
+            id: notificationId,
+            orderId,
+            orderNumber: order.order_number,
+            type: `RD_${input.decision}`,
+            title: `R&D decision recorded for ${order.order_number}`,
+            message:
+              input.decision === 'APPROVED'
+                ? `Order ${order.order_number} is approved and assigned to Planning.`
+                : `Order ${order.order_number} requires CSR follow-up: ${nextStatus}.`,
+            createdAt: new Date(),
+            readAt: null,
+          }
+        : null
       if (notification) {
         if (recipientUserId) this.notificationPublisher?.publish(recipientUserId, notification)
         if (recipientRoleId) {

@@ -51,26 +51,78 @@ export function ReportIssueButton({ orderId, orderNumber }: { orderId: string; o
 
   return (
     <>
-      <Button className="report-issue-trigger" variant="danger" size="sm" type="button" onClick={() => { setError(''); setOpen(true) }}>
-        <CircleAlert size={16} />Report issue
+      <Button
+        className="report-issue-trigger"
+        variant="danger"
+        size="sm"
+        type="button"
+        onClick={() => {
+          setError('')
+          setOpen(true)
+        }}
+      >
+        <CircleAlert size={16} />
+        Report issue
       </Button>
-      {open ? createPortal(
-        <div className="report-issue-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false) }}>
-          <section className="report-issue-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <header>
-              <div><CircleAlert size={21} /><span><strong id={titleId}>Report an order issue</strong><small>{orderNumber}</small></span></div>
-              <button type="button" aria-label="Close issue dialog" onClick={() => setOpen(false)}><X size={18} /></button>
-            </header>
-            <div className="report-issue-body">
-              <label><span>What issue did you find?</span><TextArea ref={textareaRef} value={message} onChange={(event) => { setMessage(event.target.value); setError('') }} maxLength={2000} aria-invalid={Boolean(error)} placeholder="Describe the problem, impact, and what needs attention." /></label>
-              <div className="report-issue-routing"><strong>Escalation route</strong><p>The message is sent to prior workflow owners, the CSR who created the order, and active Managers.</p></div>
-              <div className="report-issue-meta"><span>{message.length}/2000</span>{error ? <p role="alert">{error}</p> : null}</div>
-            </div>
-            <footer><Button variant="quiet" type="button" onClick={() => setOpen(false)} disabled={submitting}>Cancel</Button><Button variant="danger" type="button" onClick={() => void submit()} disabled={submitting}><Send size={16} />{submitting ? 'Sending...' : 'Send issue'}</Button></footer>
-          </section>
-        </div>,
-        document.body,
-      ) : null}
+      {open
+        ? createPortal(
+            <div
+              className="report-issue-backdrop"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setOpen(false)
+              }}
+            >
+              <section className="report-issue-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+                <header>
+                  <div>
+                    <CircleAlert size={21} />
+                    <span>
+                      <strong id={titleId}>Report an order issue</strong>
+                      <small>{orderNumber}</small>
+                    </span>
+                  </div>
+                  <button type="button" aria-label="Close issue dialog" onClick={() => setOpen(false)}>
+                    <X size={18} />
+                  </button>
+                </header>
+                <div className="report-issue-body">
+                  <label>
+                    <span>What issue did you find?</span>
+                    <TextArea
+                      ref={textareaRef}
+                      value={message}
+                      onChange={(event) => {
+                        setMessage(event.target.value)
+                        setError('')
+                      }}
+                      maxLength={2000}
+                      aria-invalid={Boolean(error)}
+                      placeholder="Describe the problem, impact, and what needs attention."
+                    />
+                  </label>
+                  <div className="report-issue-routing">
+                    <strong>Escalation route</strong>
+                    <p>The message is sent to prior workflow owners, the CSR who created the order, and active Managers.</p>
+                  </div>
+                  <div className="report-issue-meta">
+                    <span>{message.length}/2000</span>
+                    {error ? <p role="alert">{error}</p> : null}
+                  </div>
+                </div>
+                <footer>
+                  <Button variant="quiet" type="button" onClick={() => setOpen(false)} disabled={submitting}>
+                    Cancel
+                  </Button>
+                  <Button variant="danger" type="button" onClick={() => void submit()} disabled={submitting}>
+                    <Send size={16} />
+                    {submitting ? 'Sending...' : 'Send issue'}
+                  </Button>
+                </footer>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   )
 }

@@ -72,22 +72,22 @@ export type CsrOrderDetail = CsrOrderSummary & {
   }>
 }
 
-  export type CsrOrderStatusRow = {
-    eventId: string
-    orderId: string
-    orderNumber: string
-    orderName: string | null
-    orderPlacedAt: Date
-    currentStatus: string
-    status: string
-    completedBy: string
-    completedAt: Date
-    transitionDurationSeconds: number | null
-    statusDurationSeconds: number
-    current: boolean
-    comments: string | null
-    action: string
-  }
+export type CsrOrderStatusRow = {
+  eventId: string
+  orderId: string
+  orderNumber: string
+  orderName: string | null
+  orderPlacedAt: Date
+  currentStatus: string
+  status: string
+  completedBy: string
+  completedAt: Date
+  transitionDurationSeconds: number | null
+  statusDurationSeconds: number
+  current: boolean
+  comments: string | null
+  action: string
+}
 
 export type CsrReviewer = {
   authUserId: string
@@ -103,7 +103,7 @@ export type CsrAttachment = {
 
 export interface CsrService {
   listOrders(user: AuthUser, filters: { search?: string; status?: string }): Promise<CsrOrderSummary[]>
-    listOrderStatuses(user: AuthUser): Promise<CsrOrderStatusRow[]>
+  listOrderStatuses(user: AuthUser): Promise<CsrOrderStatusRow[]>
   getOrder(user: AuthUser, orderId: string): Promise<CsrOrderDetail>
   createDraft(user: AuthUser, patch: OrderPatch): Promise<CsrOrderDetail>
   updateDraft(user: AuthUser, orderId: string, patch: OrderPatch): Promise<CsrOrderDetail>
@@ -482,7 +482,14 @@ export class PostgresCsrService implements CsrService {
       )
       const order = owned.rows[0]
       if (!order) throw new CsrError(404, 'ORDER_NOT_FOUND', 'Order not found.')
-      if (order.status !== 'Draft' && Number(order.open_clarifications) === 0) {
+      const rejection = await client.query(
+        `SELECT 1 FROM flowline.technical_reviews
+         WHERE order_id = $1 AND decision = 'REJECTED'
+         LIMIT 1`,
+        [orderId],
+      )
+      const rejectedForRecovery = order.status === 'Cancelled' && rejection.rows.length > 0
+      if (order.status !== 'Draft' && Number(order.open_clarifications) === 0 && !rejectedForRecovery) {
         throw new CsrError(409, 'ORDER_NOT_EDITABLE', 'Only drafts or orders awaiting clarification can be edited.')
       }
       await this.applyPatch(client, orderId, patch)
@@ -522,7 +529,17 @@ export class PostgresCsrService implements CsrService {
         [orderId],
       )
       order.open_clarifications = clarificationResult.rows[0]?.count ?? '0'
-      if (!['Draft', 'R&D Review'].includes(order.status)) {
+      const rejectedForRecovery =
+        order.status === 'Cancelled' &&
+        (
+          await client.query(
+            `SELECT 1 FROM flowline.technical_reviews
+         WHERE order_id = $1 AND decision = 'REJECTED'
+         LIMIT 1`,
+            [orderId],
+          )
+        ).rows.length > 0
+      if (!['Draft', 'R&D Review'].includes(order.status) && !rejectedForRecovery) {
         throw new CsrError(409, 'ORDER_NOT_SUBMITTABLE', 'This order cannot be submitted from its current status.')
       }
       if (Number(order.open_clarifications) > 0) {
@@ -533,9 +550,7 @@ export class PostgresCsrService implements CsrService {
         throw new CsrError(422, 'SUBMISSION_INCOMPLETE', 'Complete all required fields before submission.', missing)
       }
 
-      const rdRole = await client.query<{ id: string }>(
-        `SELECT id FROM flowline.roles WHERE code = 'R&D'`,
-      )
+      const rdRole = await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'R&D'`)
       const previousStatus = order.status
       await client.query(
         `UPDATE flowline.orders
@@ -730,9 +745,7 @@ export class PostgresCsrService implements CsrService {
       )
       let notificationId: string | null = null
       if (request.stage === 'R&D') {
-        const rdRole = await client.query<{ id: string }>(
-          `SELECT id FROM flowline.roles WHERE code = 'R&D'`,
-        )
+        const rdRole = await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'R&D'`)
         await client.query(
           `UPDATE flowline.orders
            SET status = 'R&D Review', stage = 'R&D', owner_role_id = $2,
@@ -831,17 +844,10 @@ export class PostgresCsrService implements CsrService {
         [reviewerAuthUserId],
       )
       if (!reviewer.rows[0]) {
-        throw new CsrError(
-          422,
-          'INVALID_REVIEWER',
-          'Select an active R&D reviewer.',
-          ['assignedReviewerAuthUserId'],
-        )
+        throw new CsrError(422, 'INVALID_REVIEWER', 'Select an active R&D reviewer.', ['assignedReviewerAuthUserId'])
       }
 
-      const rdRole = await client.query<{ id: string }>(
-        `SELECT id::text FROM flowline.roles WHERE code = 'R&D'`,
-      )
+      const rdRole = await client.query<{ id: string }>(`SELECT id::text FROM flowline.roles WHERE code = 'R&D'`)
       await client.query(
         `UPDATE flowline.orders
          SET owner_auth_user_id = $2, owner_role_id = $3, version = version + 1
@@ -872,10 +878,7 @@ export class PostgresCsrService implements CsrService {
       values.push(cleanValue(value))
       assignments.push(`${fieldsByProperty[property]} = $${values.length}`)
     }
-    await client.query(
-      `UPDATE flowline.orders SET ${assignments.join(', ')}, version = version + 1 WHERE id = $1`,
-      values,
-    )
+    await client.query(`UPDATE flowline.orders SET ${assignments.join(', ')}, version = version + 1 WHERE id = $1`, values)
   }
 
   private missingSubmissionFields(order: OrderRow) {

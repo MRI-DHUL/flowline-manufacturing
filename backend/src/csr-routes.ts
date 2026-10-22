@@ -16,10 +16,7 @@ const orderPatchSchema = z.object({
   material: z.string().max(240).nullable().optional(),
   printColors: z.string().max(120).nullable().optional(),
   requestedQuantity: z.number().positive().max(999_999_999).nullable().optional(),
-  requestedDeliveryDate: z.preprocess(
-    (value) => value === '' ? null : value,
-    z.iso.date().nullable().optional(),
-  ),
+  requestedDeliveryDate: z.preprocess((value) => (value === '' ? null : value), z.iso.date().nullable().optional()),
   technicalNotes: z.string().max(5000).nullable().optional(),
   priority: z.enum(['Normal', 'High']).nullable().optional(),
 })
@@ -67,11 +64,7 @@ async function authenticatedUser(
   return user
 }
 
-export function registerCsrRoutes(
-  app: FastifyInstance,
-  authService: AuthService,
-  csrService: CsrService,
-) {
+export function registerCsrRoutes(app: FastifyInstance, authService: AuthService, csrService: CsrService) {
   app.get('/api/v1/csr/order-status', async (request, reply) => {
     try {
       const user = await authenticatedUser(request, reply, authService)

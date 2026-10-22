@@ -75,7 +75,6 @@ export type PlanningUser = {
   email: string
 }
 
-
 type ErrorBody = { error?: { code?: string; message?: string; fields?: string[] } }
 
 export class RdRequestError extends Error {
@@ -101,7 +100,12 @@ function apiBase() {
 async function parse<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => ({}))) as ErrorBody
   if (!response.ok) {
-    throw new RdRequestError(response.status, body.error?.code ?? 'REQUEST_FAILED', body.error?.message ?? 'The R&D request failed.', body.error?.fields ?? [])
+    throw new RdRequestError(
+      response.status,
+      body.error?.code ?? 'REQUEST_FAILED',
+      body.error?.message ?? 'The R&D request failed.',
+      body.error?.fields ?? [],
+    )
   }
   return body as T
 }
@@ -124,7 +128,6 @@ export async function listPlanningUsers() {
   const result = await request<{ planners: PlanningUser[] }>('/api/v1/rd/planners')
   return result.planners
 }
-
 
 export async function getRdOrder(orderId: string) {
   const result = await request<{ order: RdOrderDetail }>(`/api/v1/rd/orders/${orderId}`)

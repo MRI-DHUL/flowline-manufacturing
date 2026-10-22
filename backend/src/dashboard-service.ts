@@ -1,14 +1,7 @@
 import type pg from 'pg'
 import type { AuthUser } from './auth-service.js'
 
-const supportedRoles = [
-  'CSR',
-  'R&D',
-  'PLANNING',
-  'PRESS',
-  'SHIPPING',
-  'MANAGER',
-] as const
+const supportedRoles = ['CSR', 'R&D', 'PLANNING', 'PRESS', 'SHIPPING', 'MANAGER', 'SYSTEM_ADMIN'] as const
 
 export type DashboardRole = (typeof supportedRoles)[number]
 
@@ -42,6 +35,7 @@ type DashboardOrder = {
   priority: string | null
   requestedDate: string
   ageDays: number
+  slaRisk: boolean
 }
 
 export type DashboardData = {
@@ -90,9 +84,10 @@ type OrderRow = {
   priority: string | null
   requested_delivery_date: string
   age_days: number
+  sla_risk: boolean
 }
 
-const stageByRole: Record<Exclude<DashboardRole, 'CSR' | 'MANAGER'>, string> = {
+const stageByRole: Record<Exclude<DashboardRole, 'CSR' | 'MANAGER' | 'SYSTEM_ADMIN'>, string> = {
   'R&D': 'R&D',
   PLANNING: 'Planning',
   PRESS: 'Press',
@@ -107,13 +102,9 @@ export class DashboardAccessError extends Error {
 }
 
 function selectRole(roles: string[]): DashboardRole {
-  const role = roles.find((candidate): candidate is DashboardRole =>
-    supportedRoles.includes(candidate as DashboardRole),
-  )
+  const role = roles.find((candidate): candidate is DashboardRole => supportedRoles.includes(candidate as DashboardRole))
   if (!role) {
-    throw new DashboardAccessError(
-      'Your account is awaiting administrator role assignment.',
-    )
+    throw new DashboardAccessError('Your account is awaiting administrator role assignment.')
   }
   return role
 }
@@ -123,15 +114,14 @@ export class PostgresDashboardService implements DashboardService {
 
   async getDashboard(user: AuthUser): Promise<DashboardData> {
     if (user.status !== 'ACTIVE') {
-      throw new DashboardAccessError(
-        'Your account is awaiting administrator activation.',
-      )
+      throw new DashboardAccessError('Your account is awaiting administrator activation.')
     }
 
     const role = selectRole(user.roles)
-    const stage = role === 'CSR' || role === 'MANAGER' ? null : stageByRole[role]
+    const stage = role === 'CSR' || role === 'MANAGER' || role === 'SYSTEM_ADMIN' ? null : stageByRole[role]
     const visibility = `
-      ($1 = 'MANAGER')
+      (($1 = 'MANAGER' AND orders.status = 'Manager Review' AND orders.owner_auth_user_id = $2)
+      OR $1 = 'SYSTEM_ADMIN')
       OR ($1 = 'CSR' AND orders.created_by_auth_user_id = $2)
       OR ($3::text IS NOT NULL AND orders.stage = $3 AND orders.owner_auth_user_id = $2)
     `
@@ -145,7 +135,7 @@ export class PostgresDashboardService implements DashboardService {
             count(*) FILTER (WHERE status IN ('On Hold', 'Rework Required')) AS attention,
             count(*) FILTER (
               WHERE status <> 'Delivered'
-                AND clock_timestamp()::date - created_at::date >= 7
+                AND CASE stage WHEN 'R&D' THEN clock_timestamp()::date - created_at::date >= 2 WHEN 'Planning' THEN clock_timestamp()::date - created_at::date >= 2 WHEN 'Press' THEN clock_timestamp()::date - created_at::date >= 3 WHEN 'Shipping' THEN clock_timestamp()::date - created_at::date >= 2 WHEN 'Delivered' THEN false ELSE clock_timestamp()::date - created_at::date >= 1 END
             ) AS aging,
             count(*) FILTER (WHERE status = 'Delivered') AS completed,
             count(*) FILTER (WHERE status = 'In Production') AS in_production
@@ -166,7 +156,8 @@ export class PostgresDashboardService implements DashboardService {
             COALESCE(owner_role.name, orders.owner_auth_user_id, 'Unassigned') AS owner,
             orders.priority,
             orders.requested_delivery_date::text,
-            (clock_timestamp()::date - orders.created_at::date)::integer AS age_days
+            (clock_timestamp()::date - orders.created_at::date)::integer AS age_days,
+            CASE orders.stage WHEN 'R&D' THEN clock_timestamp()::date - orders.created_at::date >= 2 WHEN 'Planning' THEN clock_timestamp()::date - orders.created_at::date >= 2 WHEN 'Press' THEN clock_timestamp()::date - orders.created_at::date >= 3 WHEN 'Shipping' THEN clock_timestamp()::date - orders.created_at::date >= 2 WHEN 'Delivered' THEN false ELSE clock_timestamp()::date - orders.created_at::date >= 1 END AS sla_risk
           FROM flowline.orders
           LEFT JOIN flowline.roles AS owner_role ON owner_role.id = orders.owner_role_id
           WHERE ${visibility}
@@ -270,6 +261,7 @@ export class PostgresDashboardService implements DashboardService {
         priority: order.priority,
         requestedDate: order.requested_delivery_date,
         ageDays: order.age_days,
+        slaRisk: order.sla_risk,
       })),
     }
   }

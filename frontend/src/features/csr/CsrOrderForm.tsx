@@ -66,9 +66,7 @@ function toPatch(values: FormValues): OrderPatch {
   void _assignedReviewerAuthUserId
   return {
     ...orderValues,
-    requestedQuantity: values.requestedQuantity
-      ? Number(values.requestedQuantity)
-      : null,
+    requestedQuantity: values.requestedQuantity ? Number(values.requestedQuantity) : null,
   }
 }
 
@@ -92,7 +90,9 @@ export function CsrOrderForm({
   useEffect(() => {
     let cancelled = false
     listRdReviewers()
-      .then((items) => { if (!cancelled) setReviewers(items) })
+      .then((items) => {
+        if (!cancelled) setReviewers(items)
+      })
       .catch((error: unknown) => {
         if (!cancelled) {
           showToast({
@@ -102,7 +102,9 @@ export function CsrOrderForm({
           })
         }
       })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [showToast])
 
   function update<K extends keyof FormValues>(field: K, value: FormValues[K]) {
@@ -137,16 +139,11 @@ export function CsrOrderForm({
 
     setBusy(true)
     try {
-      let saved = currentOrder
-        ? await updateCsrDraft(currentOrder.id, toPatch(values))
-        : await createCsrDraft(toPatch(values))
+      let saved = currentOrder ? await updateCsrDraft(currentOrder.id, toPatch(values)) : await createCsrDraft(toPatch(values))
       for (const file of files) {
         saved = await uploadCsrAttachment(saved.id, file)
       }
-      if (
-        values.assignedReviewerAuthUserId
-        && saved.assignedReviewer?.authUserId !== values.assignedReviewerAuthUserId
-      ) {
+      if (values.assignedReviewerAuthUserId && saved.assignedReviewer?.authUserId !== values.assignedReviewerAuthUserId) {
         saved = await assignCsrRdReviewer(saved.id, values.assignedReviewerAuthUserId)
       }
       setCurrentOrder(saved)
@@ -186,8 +183,7 @@ export function CsrOrderForm({
   }
 
   const editableForSubmission = !currentOrder || currentOrder.status === 'Draft'
-  const fieldClass = (field: keyof FormValues) =>
-    fieldErrors.includes(field) ? 'csr-field invalid' : 'csr-field'
+  const fieldClass = (field: keyof FormValues) => (fieldErrors.includes(field) ? 'csr-field invalid' : 'csr-field')
 
   return (
     <section className="csr-form-page" aria-labelledby="csr-form-title">
@@ -198,7 +194,8 @@ export function CsrOrderForm({
           <span>Save an incomplete draft or complete the required fields and submit it to R&D.</span>
         </div>
         <Button className="csr-secondary-button" type="button" onClick={onCancel} disabled={busy}>
-          <ArrowLeft size={17} />Back to orders
+          <ArrowLeft size={17} />
+          Back to orders
         </Button>
       </header>
 
@@ -206,49 +203,104 @@ export function CsrOrderForm({
         <fieldset disabled={busy}>
           <legend>Customer and product</legend>
           <div className="csr-form-grid">
-            <FormField label="Customer name" required className={fieldClass('customerName')}><TextInput value={values.customerName} onChange={(event) => update('customerName', event.target.value)} /></FormField>
-            <FormField label="Destination" className="csr-field"><TextInput value={values.destination} onChange={(event) => update('destination', event.target.value)} /></FormField>
-            <FormField label="Product name" required className={fieldClass('productName')}><TextInput value={values.productName} onChange={(event) => update('productName', event.target.value)} /></FormField>
-            <FormField label="Order type" className="csr-field"><TextInput value={values.orderType} onChange={(event) => update('orderType', event.target.value)} /></FormField>
-            <FormField label="Product description" className="csr-field wide"><TextArea value={values.productDescription} onChange={(event) => update('productDescription', event.target.value)} /></FormField>
+            <FormField label="Customer name" required className={fieldClass('customerName')}>
+              <TextInput value={values.customerName} onChange={(event) => update('customerName', event.target.value)} />
+            </FormField>
+            <FormField label="Destination" className="csr-field">
+              <TextInput value={values.destination} onChange={(event) => update('destination', event.target.value)} />
+            </FormField>
+            <FormField label="Product name" required className={fieldClass('productName')}>
+              <TextInput value={values.productName} onChange={(event) => update('productName', event.target.value)} />
+            </FormField>
+            <FormField label="Order type" className="csr-field">
+              <TextInput value={values.orderType} onChange={(event) => update('orderType', event.target.value)} />
+            </FormField>
+            <FormField label="Product description" className="csr-field wide">
+              <TextArea value={values.productDescription} onChange={(event) => update('productDescription', event.target.value)} />
+            </FormField>
           </div>
         </fieldset>
 
         <fieldset disabled={busy}>
           <legend>Packaging and specification</legend>
           <div className="csr-form-grid">
-            <FormField label="Packaging type" required className={fieldClass('packagingType')}><TextInput value={values.packagingType} onChange={(event) => update('packagingType', event.target.value)} /></FormField>
-            <FormField label="Material" required className={fieldClass('material')}><TextInput value={values.material} onChange={(event) => update('material', event.target.value)} /></FormField>
-            <FormField label="Dimensions" className="csr-field"><TextInput value={values.dimensions} onChange={(event) => update('dimensions', event.target.value)} /></FormField>
-            <FormField label="Print colors" className="csr-field"><TextInput value={values.printColors} onChange={(event) => update('printColors', event.target.value)} /></FormField>
+            <FormField label="Packaging type" required className={fieldClass('packagingType')}>
+              <TextInput value={values.packagingType} onChange={(event) => update('packagingType', event.target.value)} />
+            </FormField>
+            <FormField label="Material" required className={fieldClass('material')}>
+              <TextInput value={values.material} onChange={(event) => update('material', event.target.value)} />
+            </FormField>
+            <FormField label="Dimensions" className="csr-field">
+              <TextInput value={values.dimensions} onChange={(event) => update('dimensions', event.target.value)} />
+            </FormField>
+            <FormField label="Print colors" className="csr-field">
+              <TextInput value={values.printColors} onChange={(event) => update('printColors', event.target.value)} />
+            </FormField>
           </div>
         </fieldset>
 
         <fieldset disabled={busy}>
           <legend>Quantity and delivery</legend>
           <div className="csr-form-grid">
-            <FormField label="Requested quantity" required className={fieldClass('requestedQuantity')}><TextInput type="number" min="1" value={values.requestedQuantity} onChange={(event) => update('requestedQuantity', event.target.value)} /></FormField>
-            <FormField label="Requested delivery date" required className={fieldClass('requestedDeliveryDate')}><DatePicker value={values.requestedDeliveryDate} onChange={(event) => update('requestedDeliveryDate', event.target.value)} /></FormField>
-            <FormField label="Priority" className="csr-field"><Select value={values.priority} onChange={(event) => update('priority', event.target.value as FormValues['priority'])}>
+            <FormField label="Requested quantity" required className={fieldClass('requestedQuantity')}>
+              <TextInput
+                type="number"
+                min="1"
+                value={values.requestedQuantity}
+                onChange={(event) => update('requestedQuantity', event.target.value)}
+              />
+            </FormField>
+            <FormField label="Requested delivery date" required className={fieldClass('requestedDeliveryDate')}>
+              <DatePicker value={values.requestedDeliveryDate} onChange={(event) => update('requestedDeliveryDate', event.target.value)} />
+            </FormField>
+            <FormField label="Priority" className="csr-field">
+              <Select value={values.priority} onChange={(event) => update('priority', event.target.value as FormValues['priority'])}>
                 <option value="Normal">Normal</option>
                 <option value="High">High</option>
-              </Select></FormField>
-            <FormField label="Technical notes" className="csr-field wide"><TextArea value={values.technicalNotes} onChange={(event) => update('technicalNotes', event.target.value)} /></FormField>
+              </Select>
+            </FormField>
+            <FormField label="Technical notes" className="csr-field wide">
+              <TextArea value={values.technicalNotes} onChange={(event) => update('technicalNotes', event.target.value)} />
+            </FormField>
           </div>
         </fieldset>
 
         <fieldset disabled={busy}>
           <legend>Supporting files</legend>
           <FileUpload className="csr-file-control" onFilesSelected={setFiles} />
-          {files.length ? <ul className="csr-file-list">{files.map((file) => <li key={`${file.name}-${file.size}`}>{file.name}<small>{Math.ceil(file.size / 1024)} KB</small></li>)}</ul> : null}
+          {files.length ? (
+            <ul className="csr-file-list">
+              {files.map((file) => (
+                <li key={`${file.name}-${file.size}`}>
+                  {file.name}
+                  <small>{Math.ceil(file.size / 1024)} KB</small>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {currentOrder?.attachments.length ? (
             <ul className="csr-file-list existing">
               {currentOrder.attachments.map((attachment) => (
                 <li key={attachment.id}>
-                  <Button variant="quiet" size="sm" type="button" onClick={() => void downloadCsrAttachment(currentOrder.id, attachment.id, attachment.fileName)}>{attachment.fileName}</Button>
+                  <Button
+                    variant="quiet"
+                    size="sm"
+                    type="button"
+                    onClick={() => void downloadCsrAttachment(currentOrder.id, attachment.id, attachment.fileName)}
+                  >
+                    {attachment.fileName}
+                  </Button>
                   <small>{Math.ceil(attachment.sizeBytes / 1024)} KB</small>
                   {currentOrder.status === 'Draft' ? (
-                    <Button variant="quiet" size="sm" type="button" aria-label={`Remove ${attachment.fileName}`} onClick={() => void removeAttachment(attachment.id)}><Trash2 size={16} /></Button>
+                    <Button
+                      variant="quiet"
+                      size="sm"
+                      type="button"
+                      aria-label={`Remove ${attachment.fileName}`}
+                      onClick={() => void removeAttachment(attachment.id)}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
                   ) : null}
                 </li>
               ))}
@@ -259,7 +311,12 @@ export function CsrOrderForm({
         <fieldset disabled={busy}>
           <legend>R&amp;D assignment</legend>
           <div className="csr-form-grid">
-            <FormField label="R&D reviewer" required className={fieldClass('assignedReviewerAuthUserId')} hint={!reviewers.length ? 'No active R&D reviewers are available.' : undefined}>
+            <FormField
+              label="R&D reviewer"
+              required
+              className={fieldClass('assignedReviewerAuthUserId')}
+              hint={!reviewers.length ? 'No active R&D reviewers are available.' : undefined}
+            >
               <Select
                 value={values.assignedReviewerAuthUserId}
                 onChange={(event) => update('assignedReviewerAuthUserId', event.target.value)}
@@ -277,11 +334,13 @@ export function CsrOrderForm({
 
         <div className="csr-form-actions">
           <Button className="csr-secondary-button" type="button" onClick={() => void persist(false)} disabled={busy}>
-            <Save size={17} />{busy ? 'Saving...' : 'Save draft'}
+            <Save size={17} />
+            {busy ? 'Saving...' : 'Save draft'}
           </Button>
           {editableForSubmission ? (
             <Button variant="primary" className="csr-primary-button" type="button" onClick={() => void persist(true)} disabled={busy}>
-              <Send size={17} />{busy ? 'Submitting...' : 'Submit for R&D review'}
+              <Send size={17} />
+              {busy ? 'Submitting...' : 'Submit for R&D review'}
             </Button>
           ) : null}
         </div>

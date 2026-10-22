@@ -28,15 +28,17 @@ export function validateLogin(values: LoginValues): FieldErrors<LoginValues> {
   return errors
 }
 
-export function validateRegistration(
-  values: RegisterValues,
-): FieldErrors<RegisterValues> {
+export function validateRegistration(values: RegisterValues): FieldErrors<RegisterValues> {
   const errors: FieldErrors<RegisterValues> = {
     ...validateLogin(values),
   }
 
   if (!values.fullName.trim()) {
     errors.fullName = 'Enter your full name.'
+  }
+
+  if (values.email.trim() && !values.email.trim().toLowerCase().endsWith('@flowline.com')) {
+    errors.email = 'Use your @flowline.com work email.'
   }
 
   if (values.password && values.password.length < 8) {

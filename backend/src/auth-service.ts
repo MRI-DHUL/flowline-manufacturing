@@ -1,11 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type pg from 'pg'
-import {
-  createSessionToken,
-  hashPassword,
-  hashSessionToken,
-  verifyPassword,
-} from './auth-crypto.js'
+import { createSessionToken, hashPassword, hashSessionToken, verifyPassword } from './auth-crypto.js'
 
 const sessionDurationMs = 8 * 60 * 60 * 1000
 const maximumFailedAttempts = 5
@@ -26,11 +21,7 @@ export type LoginResult = {
 }
 
 export interface AuthService {
-  register(input: {
-    fullName: string
-    email: string
-    password: string
-  }): Promise<AuthUser>
+  register(input: { fullName: string; email: string; password: string }): Promise<AuthUser>
   login(input: { email: string; password: string }): Promise<LoginResult>
   getSession(token: string): Promise<AuthUser | null>
   logout(token: string): Promise<void>
@@ -61,12 +52,7 @@ type AccountRow = {
 
 const dummyHash = hashPassword(randomUUID())
 
-function toUser(
-  row: Pick<
-    AccountRow,
-    'auth_user_id' | 'email' | 'display_name' | 'status' | 'roles'
-  >,
-): AuthUser {
+function toUser(row: Pick<AccountRow, 'auth_user_id' | 'email' | 'display_name' | 'status' | 'roles'>): AuthUser {
   return {
     id: row.auth_user_id,
     email: row.email,
@@ -79,12 +65,11 @@ function toUser(
 export class PostgresAuthService implements AuthService {
   constructor(private readonly pool: pg.Pool) {}
 
-  async register(input: {
-    fullName: string
-    email: string
-    password: string
-  }): Promise<AuthUser> {
+  async register(input: { fullName: string; email: string; password: string }): Promise<AuthUser> {
     const email = input.email.trim().toLowerCase()
+    if (!email.endsWith('@flowline.com')) {
+      throw new AuthError(422, 'WORK_EMAIL_REQUIRED', 'Use your @flowline.com work email.')
+    }
     const fullName = input.fullName.trim()
     const passwordHash = await hashPassword(input.password)
     const identityId = randomUUID()
@@ -120,11 +105,7 @@ export class PostgresAuthService implements AuthService {
     } catch (error) {
       await client.query('ROLLBACK')
       if ((error as { code?: string }).code === '23505') {
-        throw new AuthError(
-          409,
-          'ACCOUNT_EXISTS',
-          'An account already exists for this email address.',
-        )
+        throw new AuthError(409, 'ACCOUNT_EXISTS', 'An account already exists for this email address.')
       }
       throw error
     } finally {
@@ -171,11 +152,7 @@ export class PostgresAuthService implements AuthService {
     }
 
     if (account.locked_until && account.locked_until > new Date()) {
-      throw new AuthError(
-        429,
-        'ACCOUNT_LOCKED',
-        'Too many failed attempts. Try again later.',
-      )
+      throw new AuthError(429, 'ACCOUNT_LOCKED', 'Too many failed attempts. Try again later.')
     }
 
     const validPassword = await verifyPassword(account.password_hash, input.password)
@@ -260,10 +237,7 @@ export class PostgresAuthService implements AuthService {
     )
     const profile = result.rows[0]
     if (profile) {
-      await this.pool.query(
-        'UPDATE flowline.auth_sessions SET last_seen_at = clock_timestamp() WHERE token_hash = $1',
-        [tokenHash],
-      )
+      await this.pool.query('UPDATE flowline.auth_sessions SET last_seen_at = clock_timestamp() WHERE token_hash = $1', [tokenHash])
     }
     return profile ? toUser(profile) : null
   }

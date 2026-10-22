@@ -16,13 +16,7 @@ const iconByTone: Record<ToastTone, typeof CheckCircle2> = {
   info: Info,
 }
 
-function ToastItem({
-  toast,
-  onDismiss,
-}: {
-  toast: ToastRecord
-  onDismiss: (id: string) => void
-}) {
+function ToastItem({ toast, onDismiss }: { toast: ToastRecord; onDismiss: (id: string) => void }) {
   const Icon = iconByTone[toast.tone]
 
   useEffect(() => {

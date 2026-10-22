@@ -1,12 +1,6 @@
 import type { AuthUser } from '../auth/auth-service'
 
-export type DashboardRole =
-  | 'CSR'
-  | 'R&D'
-  | 'PLANNING'
-  | 'PRESS'
-  | 'SHIPPING'
-  | 'MANAGER'
+export type DashboardRole = 'CSR' | 'R&D' | 'PLANNING' | 'PRESS' | 'SHIPPING' | 'MANAGER' | 'SYSTEM_ADMIN'
 
 export type DashboardOrder = {
   id: string
@@ -19,6 +13,7 @@ export type DashboardOrder = {
   priority: string | null
   requestedDate: string
   ageDays: number
+  slaRisk: boolean
 }
 
 export type DashboardData = {
@@ -48,11 +43,7 @@ export class DashboardRequestError extends Error {
   readonly status: number
   readonly code: string
 
-  constructor(
-    status: number,
-    code: string,
-    message: string,
-  ) {
+  constructor(status: number, code: string, message: string) {
     super(message)
     this.name = 'DashboardRequestError'
     this.status = status

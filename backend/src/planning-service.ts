@@ -1,6 +1,6 @@
 import type pg from 'pg'
 import type { AuthUser } from './auth-service.js'
-import type { NotificationPublisher } from './notification-service.js'
+import type { NotificationItem, NotificationPublisher } from './notification-service.js'
 
 export type PlanningOrderSummary = {
   id: string
@@ -86,7 +86,11 @@ export interface PlanningService {
   getOrder(user: AuthUser, orderId: string): Promise<PlanningOrderDetail>
   saveAssessment(user: AuthUser, orderId: string, input: PlanningAssessmentInput): Promise<PlanningOrderDetail>
   release(user: AuthUser, orderId: string, input: PlanningAssessmentInput): Promise<PlanningOrderDetail>
-  downloadAttachment(user: AuthUser, orderId: string, attachmentId: string): Promise<{ fileName: string; mediaType: string; content: Buffer }>
+  downloadAttachment(
+    user: AuthUser,
+    orderId: string,
+    attachmentId: string,
+  ): Promise<{ fileName: string; mediaType: string; content: Buffer }>
 }
 
 export class PlanningError extends Error {
@@ -209,11 +213,17 @@ export class PostgresPlanningService implements PlanningService {
 
     const [assessment, reviews, attachments] = await Promise.all([
       this.pool.query<{
-        id: string; material_status: PlanningAssessment['materialStatus']; shortage_reason: string | null
-        expected_material_date: string | Date | null; production_line_id: string | null
-        planned_production_date: string | Date | null; capacity_status: PlanningAssessment['capacityStatus']
-        readiness_status: PlanningAssessment['readinessStatus']; planning_notes: string | null
-        press_operator_auth_user_id: string | null; updated_at: Date
+        id: string
+        material_status: PlanningAssessment['materialStatus']
+        shortage_reason: string | null
+        expected_material_date: string | Date | null
+        production_line_id: string | null
+        planned_production_date: string | Date | null
+        capacity_status: PlanningAssessment['capacityStatus']
+        readiness_status: PlanningAssessment['readinessStatus']
+        planning_notes: string | null
+        press_operator_auth_user_id: string | null
+        updated_at: Date
       }>(
         `SELECT id, material_status, shortage_reason, expected_material_date, production_line_id,
           planned_production_date, capacity_status, readiness_status, planning_notes,
@@ -224,9 +234,13 @@ export class PostgresPlanningService implements PlanningService {
         [orderId, user.id],
       ),
       this.pool.query<{
-        decision: string; technical_comments: string; tooling_requirements: string | null
-        material_recommendation: string | null; constraints_and_risks: string | null
-        reviewer_name: string; decided_at: Date
+        decision: string
+        technical_comments: string
+        tooling_requirements: string | null
+        material_recommendation: string | null
+        constraints_and_risks: string | null
+        reviewer_name: string
+        decided_at: Date
       }>(
         `SELECT review.decision, review.technical_comments, review.tooling_requirements,
                 review.material_recommendation, review.constraints_and_risks,
@@ -254,19 +268,21 @@ export class PostgresPlanningService implements PlanningService {
       material: order.material,
       printColors: order.print_colors,
       technicalNotes: order.technical_notes,
-      assessment: currentAssessment ? {
-        id: currentAssessment.id,
-        materialStatus: currentAssessment.material_status,
-        shortageReason: currentAssessment.shortage_reason,
-        expectedMaterialDate: dateOnly(currentAssessment.expected_material_date),
-        productionLineId: currentAssessment.production_line_id,
-        plannedProductionDate: dateOnly(currentAssessment.planned_production_date),
-        capacityStatus: currentAssessment.capacity_status,
-        readinessStatus: currentAssessment.readiness_status,
-        planningNotes: currentAssessment.planning_notes,
-        pressUserAuthUserId: currentAssessment.press_operator_auth_user_id,
-        updatedAt: currentAssessment.updated_at,
-      } : null,
+      assessment: currentAssessment
+        ? {
+            id: currentAssessment.id,
+            materialStatus: currentAssessment.material_status,
+            shortageReason: currentAssessment.shortage_reason,
+            expectedMaterialDate: dateOnly(currentAssessment.expected_material_date),
+            productionLineId: currentAssessment.production_line_id,
+            plannedProductionDate: dateOnly(currentAssessment.planned_production_date),
+            capacityStatus: currentAssessment.capacity_status,
+            readinessStatus: currentAssessment.readiness_status,
+            planningNotes: currentAssessment.planning_notes,
+            pressUserAuthUserId: currentAssessment.press_operator_auth_user_id,
+            updatedAt: currentAssessment.updated_at,
+          }
+        : null,
       technicalReviews: reviews.rows.map((review) => ({
         decision: review.decision,
         technicalComments: review.technical_comments,
@@ -301,9 +317,14 @@ export class PostgresPlanningService implements PlanningService {
       if (!input.pressUserAuthUserId) fields.push('pressUserAuthUserId')
     }
     if (fields.length) {
-      throw new PlanningError(422, release ? 'RELEASE_BLOCKED' : 'ASSESSMENT_INCOMPLETE', release
-        ? 'Complete all material, capacity, line, schedule, readiness, and Press assignment checks before release.'
-        : 'Record the shortage reason and expected material date.', fields)
+      throw new PlanningError(
+        422,
+        release ? 'RELEASE_BLOCKED' : 'ASSESSMENT_INCOMPLETE',
+        release
+          ? 'Complete all material, capacity, line, schedule, readiness, and Press assignment checks before release.'
+          : 'Record the shortage reason and expected material date.',
+        fields,
+      )
     }
   }
 
@@ -314,10 +335,19 @@ export class PostgresPlanningService implements PlanningService {
        ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`,
       [orderId, user.id],
     )
-    const values = [orderId, user.id, input.materialStatus, input.shortageReason?.trim() || null,
-      input.expectedMaterialDate || null, input.productionLineId || null, input.plannedProductionDate || null,
-      input.capacityStatus, input.readinessStatus, input.planningNotes?.trim() || null,
-      input.pressUserAuthUserId || null]
+    const values = [
+      orderId,
+      user.id,
+      input.materialStatus,
+      input.shortageReason?.trim() || null,
+      input.expectedMaterialDate || null,
+      input.productionLineId || null,
+      input.plannedProductionDate || null,
+      input.capacityStatus,
+      input.readinessStatus,
+      input.planningNotes?.trim() || null,
+      input.pressUserAuthUserId || null,
+    ]
     if (existing.rows[0]) {
       await client.query(
         `UPDATE flowline.planning_reviews
@@ -345,8 +375,9 @@ export class PostgresPlanningService implements PlanningService {
     const client = await this.pool.connect()
     try {
       await client.query('BEGIN')
-      const order = await client.query<{ id: string }>(
-        `SELECT id FROM flowline.orders
+      const liveNotifications: Array<{ userId: string; item: NotificationItem }> = []
+      const order = await client.query<{ id: string; order_number: string; created_by_auth_user_id: string }>(
+        `SELECT id, order_number, created_by_auth_user_id FROM flowline.orders
          WHERE id = $1 AND owner_auth_user_id = $2 AND stage = 'Planning' AND status = 'Planning Review'
          FOR UPDATE`,
         [orderId, user.id],
@@ -358,7 +389,54 @@ export class PostgresPlanningService implements PlanningService {
          VALUES ($1, $2, 'PLANNING_ASSESSMENT_SAVED', $3)`,
         [orderId, user.id, input.planningNotes?.trim() || null],
       )
+      if (input.materialStatus === 'SHORTAGE') {
+        const recipients = await client.query<{ auth_user_id: string }>(
+          `SELECT profile.auth_user_id
+           FROM flowline.user_profiles profile
+           JOIN flowline.user_roles user_role ON user_role.user_profile_id = profile.id
+           JOIN flowline.roles role ON role.id = user_role.role_id
+           WHERE profile.status = 'ACTIVE' AND role.code = 'MANAGER'
+           UNION
+           SELECT $2`,
+          [orderId, order.rows[0].created_by_auth_user_id],
+        )
+        const notification = await client.query<{ id: string; created_at: Date }>(
+          `INSERT INTO flowline.notifications (order_id, type, title, message)
+           VALUES ($1, 'MATERIAL_SHORTAGE', $2, $3) RETURNING id, created_at`,
+          [
+            orderId,
+            `Material shortage for ${order.rows[0].order_number}`,
+            `${input.shortageReason?.trim()}. Expected availability: ${input.expectedMaterialDate}.`,
+          ],
+        )
+        for (const recipient of recipients.rows) {
+          if (recipient.auth_user_id === user.id) continue
+          await client.query(`INSERT INTO flowline.notification_recipients (notification_id, recipient_auth_user_id) VALUES ($1,$2)`, [
+            notification.rows[0]?.id,
+            recipient.auth_user_id,
+          ])
+          if (notification.rows[0])
+            liveNotifications.push({
+              userId: recipient.auth_user_id,
+              item: {
+                id: notification.rows[0].id,
+                orderId,
+                orderNumber: order.rows[0].order_number,
+                type: 'MATERIAL_SHORTAGE',
+                title: `Material shortage for ${order.rows[0].order_number}`,
+                message: `${input.shortageReason?.trim()}. Expected availability: ${input.expectedMaterialDate}.`,
+                createdAt: notification.rows[0].created_at,
+                readAt: null,
+              },
+            })
+        }
+        await client.query(
+          `INSERT INTO flowline.audit_events (order_id, actor_auth_user_id, action, reason, details) VALUES ($1,$2,'MATERIAL_SHORTAGE_ALERTED',$3,$4)`,
+          [orderId, user.id, input.shortageReason?.trim(), JSON.stringify({ expectedMaterialDate: input.expectedMaterialDate })],
+        )
+      }
       await client.query('COMMIT')
+      for (const notification of liveNotifications) this.notificationPublisher?.publish(notification.userId, notification.item)
       return this.getOrder(user, orderId)
     } catch (error) {
       await client.query('ROLLBACK')

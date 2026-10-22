@@ -80,9 +80,7 @@ export function RegisterPage() {
           placeholder="name@company.com"
           value={values.email}
           error={errors.email}
-          onChange={(event) =>
-            setValues((current) => ({ ...current, email: event.target.value }))
-          }
+          onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
         />
         <AuthField
           id="register-password"

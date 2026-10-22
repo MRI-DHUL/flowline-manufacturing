@@ -49,10 +49,7 @@ async function main() {
       }
 
       if (command === 'status') {
-        logger.info(
-          { migration: migration.name, status: previous ? 'applied' : 'pending' },
-          'Migration status',
-        )
+        logger.info({ migration: migration.name, status: previous ? 'applied' : 'pending' }, 'Migration status')
         continue
       }
 
@@ -62,10 +59,7 @@ async function main() {
       await client.query('BEGIN')
       try {
         await client.query(migration.sql)
-        await client.query(
-          'INSERT INTO flowline.schema_migrations (name, checksum) VALUES ($1, $2)',
-          [migration.name, migration.checksum],
-        )
+        await client.query('INSERT INTO flowline.schema_migrations (name, checksum) VALUES ($1, $2)', [migration.name, migration.checksum])
         await client.query('COMMIT')
       } catch (error) {
         await client.query('ROLLBACK')

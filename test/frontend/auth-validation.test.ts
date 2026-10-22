@@ -10,9 +10,7 @@ describe('validateLogin', () => {
   })
 
   it('accepts complete login values', () => {
-    expect(
-      validateLogin({ email: 'asha@flowline.example', password: 'secret' }),
-    ).toEqual({})
+    expect(validateLogin({ email: 'asha@flowline.example', password: 'secret' })).toEqual({})
   })
 })
 
@@ -37,7 +35,7 @@ describe('validateRegistration', () => {
     expect(
       validateRegistration({
         fullName: 'Asha Menon',
-        email: 'asha@flowline.example',
+        email: 'asha@flowline.com',
         password: 'secure-pass',
         confirmPassword: 'secure-pass',
       }),

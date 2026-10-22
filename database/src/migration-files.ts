@@ -13,9 +13,7 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url))
 const migrationsDirectory = resolve(currentDirectory, '..', 'migrations')
 
 export async function loadMigrations(): Promise<MigrationFile[]> {
-  const names = (await readdir(migrationsDirectory))
-    .filter((name) => /^\d{3}_[a-z0-9_]+\.sql$/.test(name))
-    .sort()
+  const names = (await readdir(migrationsDirectory)).filter((name) => /^\d{3}_[a-z0-9_]+\.sql$/.test(name)).sort()
 
   return Promise.all(
     names.map(async (name) => {

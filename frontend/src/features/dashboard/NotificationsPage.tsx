@@ -3,11 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../../components/toast/useToast'
 import { Button, Card } from '../../components/ui'
-import {
-  deleteNotification,
-  listNotifications,
-  markNotificationRead,
-} from './notification-service'
+import { deleteNotification, listNotifications, markNotificationRead } from './notification-service'
 import type { DashboardNotification } from './notification-service'
 import './notifications-page.css'
 
@@ -33,21 +29,34 @@ export function NotificationsPage() {
   useEffect(() => {
     let cancelled = false
     listNotifications()
-      .then((items) => { if (!cancelled) setNotifications(items) })
-      .catch((error) => {
-        if (!cancelled) showToast({ title: 'Notifications unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+      .then((items) => {
+        if (!cancelled) setNotifications(items)
       })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
+      .catch((error) => {
+        if (!cancelled)
+          showToast({ title: 'Notifications unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [showToast])
 
   async function markRead(notification: DashboardNotification) {
     if (notification.readAt) return
     try {
       await markNotificationRead(notification.id)
-      setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item))
+      setNotifications((current) =>
+        current.map((item) => (item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item)),
+      )
     } catch (error) {
-      showToast({ title: 'Notification could not be marked read', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+      showToast({
+        title: 'Notification could not be marked read',
+        message: error instanceof Error ? error.message : undefined,
+        tone: 'error',
+      })
     }
   }
 
@@ -69,24 +78,67 @@ export function NotificationsPage() {
   return (
     <section className="notifications-page" aria-labelledby="notifications-page-title">
       <header className="notifications-page-header">
-        <div><p>Workspace updates</p><h2 id="notifications-page-title">All notifications</h2><span>Review, read, and remove your notification history.</span></div>
+        <div>
+          <p>Workspace updates</p>
+          <h2 id="notifications-page-title">All notifications</h2>
+          <span>Review, read, and remove your notification history.</span>
+        </div>
         <Bell size={26} aria-hidden="true" />
       </header>
-      {loading ? <div className="notifications-page-empty">Loading notifications...</div> : notifications.length ? (
+      {loading ? (
+        <div className="notifications-page-empty">Loading notifications...</div>
+      ) : notifications.length ? (
         <div className="notifications-page-list">
           {notifications.map((notification) => (
             <Card key={notification.id} className="notification-history-item" data-unread={!notification.readAt}>
-              <div className="notification-history-icon"><Bell size={18} /></div>
-              <div className="notification-history-body"><strong>{notification.title}</strong><p>{notification.message}</p><small>{formatDate(notification.createdAt)}{notification.orderNumber ? ` · ${notification.orderNumber}` : ''}</small></div>
+              <div className="notification-history-icon">
+                <Bell size={18} />
+              </div>
+              <div className="notification-history-body">
+                <strong>{notification.title}</strong>
+                <p>{notification.message}</p>
+                <small>
+                  {formatDate(notification.createdAt)}
+                  {notification.orderNumber ? ` · ${notification.orderNumber}` : ''}
+                </small>
+              </div>
               <div className="notification-history-actions">
-                {notification.orderId ? <Button variant="quiet" size="sm" type="button" onClick={() => openOrder(notification)}>Open order</Button> : null}
-                {!notification.readAt ? <Button variant="quiet" size="sm" type="button" onClick={() => void markRead(notification)} aria-label={`Mark ${notification.title} as read`}><CheckCheck size={17} /></Button> : null}
-                <Button variant="quiet" size="sm" type="button" onClick={() => void remove(notification)} aria-label={`Delete ${notification.title}`}><Trash2 size={17} /></Button>
+                {notification.orderId ? (
+                  <Button variant="quiet" size="sm" type="button" onClick={() => openOrder(notification)}>
+                    Open order
+                  </Button>
+                ) : null}
+                {!notification.readAt ? (
+                  <Button
+                    variant="quiet"
+                    size="sm"
+                    type="button"
+                    onClick={() => void markRead(notification)}
+                    aria-label={`Mark ${notification.title} as read`}
+                  >
+                    <CheckCheck size={17} />
+                  </Button>
+                ) : null}
+                <Button
+                  variant="quiet"
+                  size="sm"
+                  type="button"
+                  onClick={() => void remove(notification)}
+                  aria-label={`Delete ${notification.title}`}
+                >
+                  <Trash2 size={17} />
+                </Button>
               </div>
             </Card>
           ))}
         </div>
-      ) : <div className="notifications-page-empty"><Bell size={26} /><strong>No notifications</strong><p>You are all caught up.</p></div>}
+      ) : (
+        <div className="notifications-page-empty">
+          <Bell size={26} />
+          <strong>No notifications</strong>
+          <p>You are all caught up.</p>
+        </div>
+      )}
     </section>
   )
 }

@@ -7,7 +7,10 @@ export const sessionCookieName = 'flowline_session'
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(1).max(120),
-  email: z.email().max(254),
+  email: z
+    .email()
+    .max(254)
+    .refine((value) => value.toLowerCase().endsWith('@flowline.com'), 'Use your @flowline.com work email.'),
   password: z.string().min(8).max(128),
 })
 
@@ -35,11 +38,7 @@ function sendAuthError(reply: FastifyReply, error: unknown) {
   throw error
 }
 
-export function registerAuthRoutes(
-  app: FastifyInstance,
-  authService: AuthService,
-  secureCookies: boolean,
-) {
+export function registerAuthRoutes(app: FastifyInstance, authService: AuthService, secureCookies: boolean) {
   app.post('/api/v1/auth/register', async (request, reply) => {
     try {
       const input = registerSchema.parse(request.body)
@@ -54,10 +53,7 @@ export function registerAuthRoutes(
     try {
       const input = loginSchema.parse(request.body)
       const result = await authService.login(input)
-      const maxAge = Math.max(
-        0,
-        Math.floor((result.expiresAt.getTime() - Date.now()) / 1000),
-      )
+      const maxAge = Math.max(0, Math.floor((result.expiresAt.getTime() - Date.now()) / 1000))
       reply.setCookie(sessionCookieName, result.sessionToken, {
         httpOnly: true,
         sameSite: 'lax',

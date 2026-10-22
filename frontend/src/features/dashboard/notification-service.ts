@@ -71,10 +71,7 @@ export async function deleteNotification(notificationId: string) {
   await parseResponse<{ ok: true }>(response)
 }
 
-export function openNotificationStream(
-  onNotification: (notification: DashboardNotification) => void,
-  onDisconnect: () => void,
-) {
+export function openNotificationStream(onNotification: (notification: DashboardNotification) => void, onDisconnect: () => void) {
   const websocketUrl = getApiBaseUrl().replace(/^http/, 'ws')
   const socket = new WebSocket(`${websocketUrl}/api/v1/notifications/live`)
   let disconnected = false

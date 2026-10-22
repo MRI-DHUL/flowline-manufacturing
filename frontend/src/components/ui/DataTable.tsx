@@ -27,17 +27,39 @@ export function DataTable<Row>({
   return (
     <div className={cx('ui-table-wrap', className)}>
       <table className="ui-table">
-        <thead><tr>{columns.map((column) => <th key={column.key}>{column.header}</th>)}</tr></thead>
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column.key}>{column.header}</th>
+            ))}
+          </tr>
+        </thead>
         <tbody>
           {rows.map((row) => {
             const key = rowKey(row)
             const expanded = expandedRowKey === key && renderExpanded
-            return <Fragment key={key}>
-              <tr key={key}>{columns.map((column) => <td key={column.key}>{column.render(row)}</td>)}</tr>
-              {expanded ? <tr key={`${key}-expanded`} className="ui-table-expanded-row"><td colSpan={columns.length}>{renderExpanded(row)}</td></tr> : null}
-            </Fragment>
+            return (
+              <Fragment key={key}>
+                <tr key={key}>
+                  {columns.map((column) => (
+                    <td key={column.key}>{column.render(row)}</td>
+                  ))}
+                </tr>
+                {expanded ? (
+                  <tr key={`${key}-expanded`} className="ui-table-expanded-row">
+                    <td colSpan={columns.length}>{renderExpanded(row)}</td>
+                  </tr>
+                ) : null}
+              </Fragment>
+            )
           })}
-          {!rows.length ? <tr><td colSpan={columns.length} className="ui-table-empty">{emptyMessage}</td></tr> : null}
+          {!rows.length ? (
+            <tr>
+              <td colSpan={columns.length} className="ui-table-empty">
+                {emptyMessage}
+              </td>
+            </tr>
+          ) : null}
         </tbody>
       </table>
     </div>

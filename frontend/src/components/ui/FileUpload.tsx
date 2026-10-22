@@ -23,8 +23,13 @@ export function FileUpload({
 
   return (
     <label className={cx('ui-file-upload', className)}>
-      <span className="ui-file-upload-icon" aria-hidden="true">+</span>
-      <span><strong>{label}</strong><small>{hint}</small></span>
+      <span className="ui-file-upload-icon" aria-hidden="true">
+        +
+      </span>
+      <span>
+        <strong>{label}</strong>
+        <small>{hint}</small>
+      </span>
       <input type="file" multiple={multiple} accept={accept} onChange={handleChange} />
     </label>
   )

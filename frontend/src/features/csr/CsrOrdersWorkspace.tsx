@@ -1,26 +1,10 @@
-import {
-  CircleAlert,
-  ClipboardList,
-  Download,
-  Edit3,
-  FileText,
-  RefreshCw,
-  Search,
-  Send,
-} from 'lucide-react'
+import { CircleAlert, ClipboardList, Download, Edit3, FileText, RefreshCw, Search, Send } from 'lucide-react'
 import { useDeferredValue, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../../components/toast/useToast'
 import { SegmentedTabs, Select, TextInput } from '../../components/ui'
-import { ReportIssueButton } from '../issues/ReportIssueButton'
 import { CsrOrderForm } from './CsrOrderForm'
-import {
-  downloadCsrAttachment,
-  getCsrOrder,
-  listCsrOrders,
-  respondToCsrClarification,
-  submitCsrOrder,
-} from './csr-order-service'
+import { downloadCsrAttachment, getCsrOrder, listCsrOrders, respondToCsrClarification, submitCsrOrder } from './csr-order-service'
 import type { CsrOrderDetail, CsrOrderSummary } from './csr-order-service'
 import './csr-orders.css'
 
@@ -32,9 +16,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-GB', {
 
 function formatDate(value: string | null) {
   if (!value) return 'Not set'
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T12:00:00`)
-    : new Date(value)
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(value)
   return Number.isNaN(date.getTime()) ? 'Not set' : dateFormatter.format(date)
 }
 
@@ -69,7 +51,8 @@ function OrderDetails({
   const [response, setResponse] = useState('')
   const [busy, setBusy] = useState(false)
   const openClarification = order.clarifications.find((item) => item.status === 'OPEN')
-  const editable = order.status === 'Draft' || Boolean(openClarification)
+  const rejectedForRecovery = order.status === 'Cancelled' && order.activity.some((item) => item.action === 'RD_REJECTED')
+  const editable = order.status === 'Draft' || Boolean(openClarification) || rejectedForRecovery
 
   async function submit() {
     setBusy(true)
@@ -104,7 +87,10 @@ function OrderDetails({
     <article className="csr-detail">
       <SegmentedTabs
         className="workflow-tabs"
-        options={[{ value: 'overview', label: 'Overview' }, { value: 'activity', label: 'Activity' }]}
+        options={[
+          { value: 'overview', label: 'Overview' },
+          { value: 'activity', label: 'Activity' },
+        ]}
         value={tab}
         onChange={(value) => setTab(value as typeof tab)}
       />
@@ -113,14 +99,27 @@ function OrderDetails({
         <div className="csr-detail-content" role="tabpanel">
           <header>
             <div>
-              <span className="workflow-status" data-tone={statusTone(order.status)}>{order.status}</span>
+              <span className="workflow-status" data-tone={statusTone(order.status)}>
+                {order.status}
+              </span>
               <h2>{order.productName ?? 'Product not set'}</h2>
-              <p>{order.orderNumber} · {order.customerName ?? 'Customer not set'}</p>
+              <p>
+                {order.orderNumber} · {order.customerName ?? 'Customer not set'}
+              </p>
             </div>
             <div className="csr-detail-actions">
-              <ReportIssueButton orderId={order.id} orderNumber={order.orderNumber} />
-              {editable ? <button type="button" onClick={onEdit}><Edit3 size={16} />Edit</button> : null}
-              {order.status === 'Draft' ? <button type="button" onClick={() => void submit()} disabled={busy}><Send size={16} />Submit</button> : null}
+              {editable ? (
+                <button type="button" onClick={onEdit}>
+                  <Edit3 size={16} />
+                  Edit
+                </button>
+              ) : null}
+              {order.status === 'Draft' || rejectedForRecovery ? (
+                <button type="button" onClick={() => void submit()} disabled={busy}>
+                  <Send size={16} />
+                  {rejectedForRecovery ? 'Resubmit for review' : 'Submit'}
+                </button>
+              ) : null}
             </div>
           </header>
 
@@ -131,21 +130,50 @@ function OrderDetails({
                 <h3 id="clarification-title">Clarification requested by {openClarification.stage}</h3>
                 <p>{openClarification.question}</p>
                 <textarea value={response} onChange={(event) => setResponse(event.target.value)} placeholder="Record your response" />
-                <button type="button" onClick={() => void respond()} disabled={busy || !response.trim()}>Send response</button>
+                <button type="button" onClick={() => void respond()} disabled={busy || !response.trim()}>
+                  Send response
+                </button>
               </div>
             </section>
           ) : null}
 
           <dl className="csr-spec-grid">
-            <div><dt>Packaging</dt><dd>{order.packagingType ?? 'Not set'}</dd></div>
-            <div><dt>Material</dt><dd>{order.material ?? 'Not set'}</dd></div>
-            <div><dt>Dimensions</dt><dd>{order.dimensions ?? 'Not set'}</dd></div>
-            <div><dt>Print colors</dt><dd>{order.printColors ?? 'Not set'}</dd></div>
-            <div><dt>Quantity</dt><dd>{order.requestedQuantity?.toLocaleString('en-IN') ?? 'Not set'}</dd></div>
-            <div><dt>Requested delivery</dt><dd>{formatDate(order.requestedDeliveryDate)}</dd></div>
-            <div><dt>Destination</dt><dd>{order.destination ?? 'Not set'}</dd></div>
-            <div><dt>Priority</dt><dd>{order.priority ?? 'Normal'}</dd></div>
-            <div><dt>R&amp;D reviewer</dt><dd>{order.assignedReviewer?.displayName ?? 'Not assigned'}</dd></div>
+            <div>
+              <dt>Packaging</dt>
+              <dd>{order.packagingType ?? 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Material</dt>
+              <dd>{order.material ?? 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Dimensions</dt>
+              <dd>{order.dimensions ?? 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Print colors</dt>
+              <dd>{order.printColors ?? 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Quantity</dt>
+              <dd>{order.requestedQuantity?.toLocaleString('en-IN') ?? 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Requested delivery</dt>
+              <dd>{formatDate(order.requestedDeliveryDate)}</dd>
+            </div>
+            <div>
+              <dt>Destination</dt>
+              <dd>{order.destination ?? 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Priority</dt>
+              <dd>{order.priority ?? 'Normal'}</dd>
+            </div>
+            <div>
+              <dt>R&amp;D reviewer</dt>
+              <dd>{order.assignedReviewer?.displayName ?? 'Not assigned'}</dd>
+            </div>
           </dl>
 
           <section className="csr-notes">
@@ -162,12 +190,23 @@ function OrderDetails({
                 {order.attachments.map((attachment) => (
                   <li key={attachment.id}>
                     <FileText size={17} />
-                    <span><strong>{attachment.fileName}</strong><small>{Math.ceil(attachment.sizeBytes / 1024)} KB</small></span>
-                    <button type="button" onClick={() => void downloadCsrAttachment(order.id, attachment.id, attachment.fileName)} aria-label={`Download ${attachment.fileName}`}><Download size={17} /></button>
+                    <span>
+                      <strong>{attachment.fileName}</strong>
+                      <small>{Math.ceil(attachment.sizeBytes / 1024)} KB</small>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void downloadCsrAttachment(order.id, attachment.id, attachment.fileName)}
+                      aria-label={`Download ${attachment.fileName}`}
+                    >
+                      <Download size={17} />
+                    </button>
                   </li>
                 ))}
               </ul>
-            ) : <p>No supporting files uploaded.</p>}
+            ) : (
+              <p>No supporting files uploaded.</p>
+            )}
           </section>
         </div>
       ) : (
@@ -177,11 +216,20 @@ function OrderDetails({
               {order.activity.map((event) => (
                 <li key={event.id}>
                   <span />
-                  <div><strong>{event.action.replaceAll('_', ' ')}</strong><time>{formatDateTime(event.occurredAt)}</time>{event.reason ? <p>{event.reason}</p> : null}</div>
+                  <div>
+                    <strong>{event.action.replaceAll('_', ' ')}</strong>
+                    <time>{formatDateTime(event.occurredAt)}</time>
+                    {event.reason ? <p>{event.reason}</p> : null}
+                  </div>
                 </li>
               ))}
             </ol>
-          ) : <div className="csr-empty-detail"><ClipboardList size={24} /><p>No activity recorded.</p></div>}
+          ) : (
+            <div className="csr-empty-detail">
+              <ClipboardList size={24} />
+              <p>No activity recorded.</p>
+            </div>
+          )}
         </div>
       )}
     </article>
@@ -220,26 +268,41 @@ export function CsrOrdersWorkspace({
         setSelectedId((current) => current ?? items[0]?.id ?? null)
       })
       .catch((error: unknown) => {
-        if (!cancelled) showToast({ title: 'Orders could not be loaded', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled)
+          showToast({ title: 'Orders could not be loaded', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [showToast])
 
   useEffect(() => {
     if (!selectedId) return
     let cancelled = false
     getCsrOrder(selectedId)
-      .then((order) => { if (!cancelled) setDetail(order) })
-      .catch((error: unknown) => {
-        if (!cancelled) showToast({ title: 'Order details unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+      .then((order) => {
+        if (!cancelled) setDetail(order)
       })
-    return () => { cancelled = true }
+      .catch((error: unknown) => {
+        if (!cancelled)
+          showToast({ title: 'Order details unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+      })
+    return () => {
+      cancelled = true
+    }
   }, [selectedId, showToast])
 
   if (mode === 'new' || mode === 'edit') {
     if (mode === 'edit' && !detail) {
-      return <div className="csr-workspace-loading"><RefreshCw className="spin" /><span>Loading draft...</span></div>
+      return (
+        <div className="csr-workspace-loading">
+          <RefreshCw className="spin" />
+          <span>Loading draft...</span>
+        </div>
+      )
     }
     return (
       <CsrOrderForm
@@ -269,21 +332,65 @@ export function CsrOrdersWorkspace({
   return (
     <section className="workflow-workbench csr-workbench" aria-label="CSR order workspace">
       <aside className="workflow-queue">
-        <div className="workflow-queue-title"><div><p>Customer service workspace</p><h2>My requests</h2></div><strong>{visible.length}</strong></div>
+        <div className="workflow-queue-title">
+          <div>
+            <p>Customer service workspace</p>
+            <h2>My requests</h2>
+          </div>
+          <strong>{visible.length}</strong>
+        </div>
         <div className="workflow-filters">
-          <label><span>Search orders</span><div><Search size={16} /><TextInput type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Order, customer, product" /></div></label>
-          <label><span>Status</span><Select value={status} onChange={(event) => setStatus(event.target.value)}>{statuses.map((item) => <option key={item}>{item}</option>)}</Select></label>
+          <label>
+            <span>Search orders</span>
+            <div>
+              <Search size={16} />
+              <TextInput
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Order, customer, product"
+              />
+            </div>
+          </label>
+          <label>
+            <span>Status</span>
+            <Select value={status} onChange={(event) => setStatus(event.target.value)}>
+              {statuses.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </Select>
+          </label>
         </div>
         <div className="workflow-order-list">
           {visible.map((order) => (
             <button key={order.id} type="button" aria-current={selectedId === order.id} onClick={() => choose(order)}>
-              <div><span className="workflow-status" data-tone={statusTone(order.status)}>{order.status}</span>{order.openClarifications ? <small>{order.openClarifications} clarification</small> : <small>{order.priority ?? 'Normal'} priority</small>}</div>
+              <div>
+                <span className="workflow-status" data-tone={statusTone(order.status)}>
+                  {order.status}
+                </span>
+                {order.openClarifications ? (
+                  <small>{order.openClarifications} clarification</small>
+                ) : (
+                  <small>{order.priority ?? 'Normal'} priority</small>
+                )}
+              </div>
               <strong>{order.productName ?? 'Product not set'}</strong>
-              <p>{order.orderNumber} · {order.customerName ?? 'Customer not set'}</p>
-              <footer><span>{formatDate(order.requestedDeliveryDate)}</span><span>{formatDateTime(order.updatedAt)}</span></footer>
+              <p>
+                {order.orderNumber} · {order.customerName ?? 'Customer not set'}
+              </p>
+              <footer>
+                <span>{formatDate(order.requestedDeliveryDate)}</span>
+                <span>{formatDateTime(order.updatedAt)}</span>
+              </footer>
             </button>
           ))}
-          {!loading && !visible.length ? <div className="workflow-queue-empty"><ClipboardList size={22} /><strong>No matching orders</strong><p>Create a draft to begin the order lifecycle.</p></div> : null}
+          {!loading && !visible.length ? (
+            <div className="workflow-queue-empty">
+              <ClipboardList size={22} />
+              <strong>No matching orders</strong>
+              <p>Create a draft to begin the order lifecycle.</p>
+            </div>
+          ) : null}
         </div>
       </aside>
 
@@ -291,10 +398,19 @@ export function CsrOrdersWorkspace({
         <OrderDetails
           order={detail}
           onEdit={() => navigate(`/dashboard/orders/${detail.id}/edit`)}
-          onUpdated={(updated) => { setDetail(updated); void refreshList() }}
+          onUpdated={(updated) => {
+            setDetail(updated)
+            void refreshList()
+          }}
         />
       ) : (
-        <article className="csr-detail"><div className="csr-empty-detail"><ClipboardList size={28} /><h2>No order selected</h2><p>Select an order or create a new draft.</p></div></article>
+        <article className="csr-detail">
+          <div className="csr-empty-detail">
+            <ClipboardList size={28} />
+            <h2>No order selected</h2>
+            <p>Select an order or create a new draft.</p>
+          </div>
+        </article>
       )}
     </section>
   )

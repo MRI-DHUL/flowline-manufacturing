@@ -6,9 +6,7 @@ describe('migration files', () => {
     const migrations = await loadMigrations()
 
     expect(migrations.length).toBeGreaterThan(0)
-    expect(migrations.map(({ name }) => name)).toEqual(
-      [...migrations.map(({ name }) => name)].sort(),
-    )
+    expect(migrations.map(({ name }) => name)).toEqual([...migrations.map(({ name }) => name)].sort())
 
     for (const migration of migrations) {
       expect(migration.sql.trim().length).toBeGreaterThan(100)

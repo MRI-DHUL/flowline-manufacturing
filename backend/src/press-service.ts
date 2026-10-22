@@ -16,7 +16,11 @@ export type PressOrderSummary = {
   updatedAt: Date
 }
 
-export type ShippingUser = { authUserId: string; displayName: string; email: string }
+export type ShippingUser = {
+  authUserId: string
+  displayName: string
+  email: string
+}
 
 export type PressOrderDetail = PressOrderSummary & {
   destination: string | null
@@ -55,7 +59,20 @@ export interface PressService {
   accept(user: AuthUser, orderId: string): Promise<PressOrderDetail>
   start(user: AuthUser, orderId: string): Promise<PressOrderDetail>
   pause(user: AuthUser, orderId: string, reason: string): Promise<PressOrderDetail>
-  reportProductionIssue(user: AuthUser, orderId: string, input: { category: string; notes: string; correctiveAction?: string | null }): Promise<PressOrderDetail>
+  reportProductionIssue(
+    user: AuthUser,
+    orderId: string,
+    input: {
+      category: string
+      notes: string
+      correctiveAction?: string | null
+    },
+  ): Promise<PressOrderDetail>
+  resolveProductionIssue(
+    user: AuthUser,
+    orderId: string,
+    input: { action: 'RESUME' | 'REVIEW'; resolution: string },
+  ): Promise<PressOrderDetail>
   complete(user: AuthUser, orderId: string, input: PressCompletionInput): Promise<PressOrderDetail>
 }
 
@@ -164,7 +181,11 @@ export class PostgresPressService implements PressService {
 
   async listShippingUsers(user: AuthUser) {
     ensurePress(user)
-    const result = await this.pool.query<{ auth_user_id: string; display_name: string; email: string }>(
+    const result = await this.pool.query<{
+      auth_user_id: string
+      display_name: string
+      email: string
+    }>(
       `SELECT profile.auth_user_id, profile.display_name, profile.email
        FROM flowline.user_profiles AS profile
        JOIN flowline.user_roles AS user_role ON user_role.user_profile_id = profile.id
@@ -172,7 +193,11 @@ export class PostgresPressService implements PressService {
        WHERE profile.status = 'ACTIVE' AND role.code = 'SHIPPING'
        ORDER BY profile.display_name, profile.email`,
     )
-    return result.rows.map((item) => ({ authUserId: item.auth_user_id, displayName: item.display_name, email: item.email }))
+    return result.rows.map((item) => ({
+      authUserId: item.auth_user_id,
+      displayName: item.display_name,
+      email: item.email,
+    }))
   }
 
   async getOrder(user: AuthUser, orderId: string) {
@@ -188,10 +213,17 @@ export class PostgresPressService implements PressService {
     const row = result.rows[0]
     if (!row) throw new PressError(404, 'ORDER_NOT_FOUND', 'Press order not found.')
     const issues = await this.pool.query<{
-      id: string; category: string; notes: string; corrective_action: string | null
-      reported_at: Date; resolved_at: Date | null
+      id: string
+      category: string
+      notes: string
+      corrective_action: string | null
+      reported_at: Date
+      resolved_at: Date | null
+      status: string
+      rework_owner_auth_user_id: string | null
     }>(
-      `SELECT id, category, notes, corrective_action, reported_at, resolved_at
+      `SELECT id, category, notes, corrective_action, reported_at, resolved_at,
+              status, rework_owner_auth_user_id
        FROM flowline.production_issues WHERE order_id = $1 ORDER BY reported_at DESC`,
       [orderId],
     )
@@ -216,6 +248,8 @@ export class PostgresPressService implements PressService {
         correctiveAction: issue.corrective_action,
         reportedAt: issue.reported_at,
         resolvedAt: issue.resolved_at,
+        status: issue.status,
+        reworkOwnerAuthUserId: issue.rework_owner_auth_user_id,
       })),
     }
   }
@@ -268,10 +302,7 @@ export class PostgresPressService implements PressService {
          WHERE id = $1`,
         [row.run_id],
       )
-      await client.query(
-        `UPDATE flowline.orders SET status = 'In Production', version = version + 1 WHERE id = $1`,
-        [orderId],
-      )
+      await client.query(`UPDATE flowline.orders SET status = 'In Production', version = version + 1 WHERE id = $1`, [orderId])
       await client.query(
         `INSERT INTO flowline.audit_events (order_id, actor_auth_user_id, action, previous_status, new_status)
          VALUES ($1, $2, 'PRESS_PRODUCTION_STARTED', $3, 'In Production')`,
@@ -312,19 +343,29 @@ export class PostgresPressService implements PressService {
     }
   }
 
-  async reportProductionIssue(user: AuthUser, orderId: string, input: { category: string; notes: string; correctiveAction?: string | null }) {
+  async reportProductionIssue(
+    user: AuthUser,
+    orderId: string,
+    input: {
+      category: string
+      notes: string
+      correctiveAction?: string | null
+    },
+  ) {
     ensurePress(user)
     const category = input.category.trim()
     const notes = input.notes.trim()
-    if (!category || notes.length < 10) throw new PressError(422, 'ISSUE_INCOMPLETE', 'Record an issue category and detailed notes.', ['category', 'notes'])
+    if (!category || notes.length < 10)
+      throw new PressError(422, 'ISSUE_INCOMPLETE', 'Record an issue category and detailed notes.', ['category', 'notes'])
     const client = await this.pool.connect()
     try {
       await client.query('BEGIN')
       const row = await this.lockedRun(client, user, orderId, ['IN_PRODUCTION', 'PAUSED'])
       await client.query(
         `INSERT INTO flowline.production_issues (
-           order_id, production_run_id, category, notes, corrective_action, reported_by_auth_user_id
-         ) VALUES ($1, $2, $3, $4, $5, $6)`,
+           order_id, production_run_id, category, notes, corrective_action,
+           reported_by_auth_user_id, rework_owner_auth_user_id
+         ) VALUES ($1, $2, $3, $4, $5, $6, $6)`,
         [orderId, row.run_id, category, notes, input.correctiveAction?.trim() || null, user.id],
       )
       await client.query(`UPDATE flowline.production_runs SET status = 'ISSUE' WHERE id = $1`, [row.run_id])
@@ -344,20 +385,109 @@ export class PostgresPressService implements PressService {
     }
   }
 
+  async resolveProductionIssue(user: AuthUser, orderId: string, input: { action: 'RESUME' | 'REVIEW'; resolution: string }) {
+    ensurePress(user)
+    const resolution = input.resolution.trim()
+    if (resolution.length < 10)
+      throw new PressError(422, 'REWORK_RESOLUTION_REQUIRED', 'Record the rework evidence and outcome.', ['resolution'])
+    const client = await this.pool.connect()
+    try {
+      await client.query('BEGIN')
+      const result = await client.query<
+        PressRow & {
+          issue_id: string
+          issue_status: string
+          rework_owner_auth_user_id: string | null
+        }
+      >(
+        `${pressSelect}
+         JOIN LATERAL (
+           SELECT issue.id AS issue_id, issue.status AS issue_status, issue.rework_owner_auth_user_id
+           FROM flowline.production_issues issue
+           WHERE issue.order_id = orders.id AND issue.status = 'OPEN'
+           ORDER BY issue.reported_at DESC LIMIT 1
+         ) open_issue ON true
+         WHERE orders.id = $1 AND orders.owner_auth_user_id = $2
+           AND orders.stage = 'Press' AND run.operator_auth_user_id = $2
+           AND orders.status = 'Rework Required' AND run.status = 'ISSUE'
+         FOR UPDATE OF orders, run`,
+        [orderId, user.id],
+      )
+      const row = result.rows[0]
+      if (!row) throw new PressError(404, 'REWORK_NOT_FOUND', 'No open rework case is available for this Press job.')
+      if (row.rework_owner_auth_user_id !== user.id)
+        throw new PressError(403, 'FORBIDDEN', 'Only the assigned rework owner can resolve this case.')
+      const nextStatus = input.action === 'RESUME' ? 'In Production' : 'Scheduled'
+      const nextRunStatus = input.action === 'RESUME' ? 'IN_PRODUCTION' : 'ACCEPTED'
+      await client.query(
+        `UPDATE flowline.production_issues SET status='RESOLVED', resolved_by_auth_user_id=$2, resolution=$3, resolved_at=clock_timestamp() WHERE id=$1`,
+        [row.issue_id, user.id, resolution],
+      )
+      await client.query(`UPDATE flowline.production_runs SET status=$2 WHERE id=$1`, [row.run_id, nextRunStatus])
+      await client.query(`UPDATE flowline.orders SET status=$2, version=version+1 WHERE id=$1`, [orderId, nextStatus])
+      await client.query(
+        `INSERT INTO flowline.audit_events (order_id, actor_auth_user_id, action, previous_status, new_status, reason, details) VALUES ($1,$2,'PRESS_REWORK_RESOLVED',$3,$4,$5,$6)`,
+        [orderId, user.id, 'Rework Required', nextStatus, resolution, JSON.stringify({ issueId: row.issue_id, action: input.action })],
+      )
+      const creator = await client.query<{
+        auth_user_id: string
+        order_number: string
+      }>(`SELECT created_by_auth_user_id AS auth_user_id, order_number FROM flowline.orders WHERE id=$1`, [orderId])
+      const creatorRow = creator.rows[0]
+      if (!creatorRow) throw new PressError(404, 'ORDER_NOT_FOUND', 'Order creator was not found.')
+      const notification = await client.query<{ id: string; created_at: Date }>(
+        `INSERT INTO flowline.notifications (order_id,type,title,message) VALUES ($1,'PRESS_REWORK_RESOLVED',$2,$3) RETURNING id,created_at`,
+        [
+          orderId,
+          `Rework update for ${creatorRow.order_number}`,
+          `Press recorded rework evidence and ${input.action === 'RESUME' ? 'resumed production' : 'returned the job for Press review'}.`,
+        ],
+      )
+      const recipient = creatorRow.auth_user_id
+      if (recipient && recipient !== user.id)
+        await client.query(`INSERT INTO flowline.notification_recipients (notification_id,recipient_auth_user_id) VALUES ($1,$2)`, [
+          notification.rows[0]?.id,
+          recipient,
+        ])
+      await client.query('COMMIT')
+      if (recipient && recipient !== user.id && notification.rows[0])
+        this.notificationPublisher?.publish(recipient, {
+          id: notification.rows[0].id,
+          orderId,
+          orderNumber: creatorRow.order_number,
+          type: 'PRESS_REWORK_RESOLVED',
+          title: `Rework update for ${creatorRow.order_number}`,
+          message: `Press recorded rework evidence and ${input.action === 'RESUME' ? 'resumed production' : 'returned the job for Press review'}.`,
+          createdAt: notification.rows[0].created_at,
+          readAt: null,
+        })
+      return this.getOrder(user, orderId)
+    } catch (error) {
+      await client.query('ROLLBACK')
+      throw error
+    } finally {
+      client.release()
+    }
+  }
+
   async complete(user: AuthUser, orderId: string, input: PressCompletionInput) {
     ensurePress(user)
     const fields: string[] = []
     if (!Number.isFinite(input.goodQuantity) || input.goodQuantity <= 0) fields.push('goodQuantity')
     if (!Number.isFinite(input.wasteQuantity) || input.wasteQuantity < 0) fields.push('wasteQuantity')
     if (!input.shippingUserAuthUserId) fields.push('shippingUserAuthUserId')
-    if (fields.length) throw new PressError(422, 'COMPLETION_INCOMPLETE', 'Record good quantity, waste quantity, and the Shipping assignee.', fields)
+    if (fields.length)
+      throw new PressError(422, 'COMPLETION_INCOMPLETE', 'Record good quantity, waste quantity, and the Shipping assignee.', fields)
 
     const client = await this.pool.connect()
     try {
       await client.query('BEGIN')
       const row = await this.lockedRun(client, user, orderId, ['IN_PRODUCTION'])
       if (input.goodQuantity + input.wasteQuantity > Number(row.planned_quantity)) {
-        throw new PressError(422, 'QUANTITY_EXCEEDS_PLAN', 'Good and waste quantities cannot exceed the planned quantity.', ['goodQuantity', 'wasteQuantity'])
+        throw new PressError(422, 'QUANTITY_EXCEEDS_PLAN', 'Good and waste quantities cannot exceed the planned quantity.', [
+          'goodQuantity',
+          'wasteQuantity',
+        ])
       }
       const [shippingUser, shippingRole] = await Promise.all([
         client.query<{ auth_user_id: string }>(
@@ -370,7 +500,8 @@ export class PostgresPressService implements PressService {
         ),
         client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'SHIPPING'`),
       ])
-      if (!shippingUser.rows[0]) throw new PressError(422, 'INVALID_SHIPPING_USER', 'Select an active Shipping user.', ['shippingUserAuthUserId'])
+      if (!shippingUser.rows[0])
+        throw new PressError(422, 'INVALID_SHIPPING_USER', 'Select an active Shipping user.', ['shippingUserAuthUserId'])
 
       await client.query(
         `UPDATE flowline.production_runs
@@ -400,7 +531,10 @@ export class PostgresPressService implements PressService {
                               'shippingUserAuthUserId', $7::text))`,
         [orderId, user.id, row.status, input.notes?.trim() || null, input.goodQuantity, input.wasteQuantity, input.shippingUserAuthUserId],
       )
-      const notificationResult = await client.query<{ id: string; created_at: Date }>(
+      const notificationResult = await client.query<{
+        id: string
+        created_at: Date
+      }>(
         `INSERT INTO flowline.notifications (order_id, type, title, message)
          VALUES ($1, 'PRESS_COMPLETED', $2, $3) RETURNING id, created_at`,
         [orderId, `Order ${row.order_number} ready to ship`, `Production completed with ${input.goodQuantity} good units.`],

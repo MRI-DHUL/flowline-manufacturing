@@ -15,7 +15,10 @@ export function MetricCard({
 }) {
   return (
     <Card className={cx('ui-metric-card', className)}>
-      <div><small>{label}</small><strong>{value}</strong></div>
+      <div>
+        <small>{label}</small>
+        <strong>{value}</strong>
+      </div>
       <Icon size={21} />
     </Card>
   )

@@ -26,7 +26,11 @@ describe('ReportIssueButton', () => {
       reportedAt: '2026-10-22T12:00:00.000Z',
       recipientCount: 3,
     })
-    render(<ToastProvider><ReportIssueButton orderId="11111111-1111-4111-8111-111111111111" orderNumber="FO-2026-001004" /></ToastProvider>)
+    render(
+      <ToastProvider>
+        <ReportIssueButton orderId="11111111-1111-4111-8111-111111111111" orderNumber="FO-2026-001004" />
+      </ToastProvider>,
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Report issue' }))
     expect(screen.getByRole('dialog')).not.toBeNull()
@@ -41,9 +45,6 @@ describe('ReportIssueButton', () => {
 
     expect(await screen.findByText('Issue reported')).not.toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(reportOrderIssue).toHaveBeenCalledWith(
-      '11111111-1111-4111-8111-111111111111',
-      'The approved material is unavailable.',
-    )
+    expect(reportOrderIssue).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111', 'The approved material is unavailable.')
   })
 })

@@ -4,11 +4,7 @@ import type { AuthService } from './auth-service.js'
 import { DashboardAccessError } from './dashboard-service.js'
 import type { DashboardService } from './dashboard-service.js'
 
-export function registerDashboardRoutes(
-  app: FastifyInstance,
-  authService: AuthService,
-  dashboardService: DashboardService,
-) {
+export function registerDashboardRoutes(app: FastifyInstance, authService: AuthService, dashboardService: DashboardService) {
   app.get('/api/v1/dashboard', async (request, reply) => {
     const token = request.cookies[sessionCookieName]
     if (!token) {

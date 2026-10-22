@@ -91,8 +91,7 @@ a:focus-visible {
   inset: 0;
   opacity: 0.17;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.25) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
   background-size: 54px 54px;
   mask-image: linear-gradient(to bottom right, black, transparent 76%);
 }
@@ -189,9 +188,7 @@ a:focus-visible {
   min-width: 0;
   padding: 48px clamp(36px, 7vw, 112px);
   place-items: center;
-  background:
-    linear-gradient(135deg, rgba(23, 107, 135, 0.1), transparent 35%),
-    var(--canvas);
+  background: linear-gradient(135deg, rgba(23, 107, 135, 0.1), transparent 35%), var(--canvas);
 }
 
 .mobile-brand {
@@ -270,7 +267,9 @@ a:focus-visible {
   background: var(--panel);
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .input-shell input[type='password'],
@@ -339,7 +338,9 @@ a:focus-visible {
   box-shadow: 0 8px 18px rgba(16, 37, 63, 0.14);
   cursor: pointer;
   font-weight: 800;
-  transition: background-color 150ms ease, transform 150ms ease;
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
 }
 
 .submit-button:hover:not(:disabled) {

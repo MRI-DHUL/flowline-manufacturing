@@ -1,17 +1,4 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { BarChart3, ClipboardList, LogOut, RefreshCw } from 'lucide-react'
 import { Button, Card } from '../../components/ui'
 import type { DashboardData } from './dashboard-service'
@@ -60,7 +47,9 @@ function StatusPieChart({ data }: { data: DashboardData['analytics']['statuses']
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie data={data} dataKey="count" nameKey="label" innerRadius="52%" outerRadius="78%" paddingAngle={2} stroke="none">
-              {data.map((entry, index) => <Cell key={entry.label} fill={chartColors[index % chartColors.length]} />)}
+              {data.map((entry, index) => (
+                <Cell key={entry.label} fill={chartColors[index % chartColors.length]} />
+              ))}
             </Pie>
             <Tooltip contentStyle={tooltipStyle} />
           </PieChart>
@@ -94,7 +83,15 @@ function OrderTrendChart({ data }: { data: DashboardData['analytics']['trend'] }
           <XAxis dataKey="label" tick={{ fill: '#52647a', fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis allowDecimals={false} tick={{ fill: '#718096', fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={tooltipStyle} />
-          <Line type="monotone" dataKey="count" name="New orders" stroke="#1f8a70" strokeWidth={3} dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
+          <Line
+            type="monotone"
+            dataKey="count"
+            name="New orders"
+            stroke="#1f8a70"
+            strokeWidth={3}
+            dot={{ r: 3, fill: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 5 }}
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -116,25 +113,46 @@ export function DashboardAnalytics({
     <>
       <section className="analytics-grid" aria-label="Operational charts">
         <Card className="analytics-panel">
-          <header><p>Workflow distribution</p><h2>Orders by stage</h2></header>
+          <header>
+            <p>Workflow distribution</p>
+            <h2>Orders by stage</h2>
+          </header>
           <StageBarChart data={data.analytics.stages} />
         </Card>
         <Card className="analytics-panel">
-          <header><p>Current mix</p><h2>Orders by status</h2></header>
+          <header>
+            <p>Current mix</p>
+            <h2>Orders by status</h2>
+          </header>
           <StatusPieChart data={data.analytics.statuses} />
         </Card>
         <Card className="analytics-panel analytics-panel-wide">
-          <header><p>Last 7 days</p><h2>New order trend</h2></header>
+          <header>
+            <p>Last 7 days</p>
+            <h2>New order trend</h2>
+          </header>
           <OrderTrendChart data={data.analytics.trend} />
         </Card>
       </section>
 
       <section className="quick-actions" aria-labelledby="quick-actions-title">
-        <div><p>Common tasks</p><h2 id="quick-actions-title">Quick actions</h2></div>
         <div>
-          <Button type="button" onClick={onViewOrders}><ClipboardList size={18} />View orders</Button>
-          <Button type="button" onClick={onRefresh}><RefreshCw size={18} />Refresh analytics</Button>
-          <Button type="button" onClick={onLogout}><LogOut size={18} />Sign out</Button>
+          <p>Common tasks</p>
+          <h2 id="quick-actions-title">Quick actions</h2>
+        </div>
+        <div>
+          <Button type="button" onClick={onViewOrders}>
+            <ClipboardList size={18} />
+            View orders
+          </Button>
+          <Button type="button" onClick={onRefresh}>
+            <RefreshCw size={18} />
+            Refresh analytics
+          </Button>
+          <Button type="button" onClick={onLogout}>
+            <LogOut size={18} />
+            Sign out
+          </Button>
         </div>
       </section>
     </>

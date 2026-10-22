@@ -18,9 +18,7 @@ export function createDatabasePool(connectionString: string) {
   })
 }
 
-export async function checkDatabase(
-  pool: pg.Pool,
-): Promise<DatabaseHealth> {
+export async function checkDatabase(pool: pg.Pool): Promise<DatabaseHealth> {
   const result = await pool.query<{
     database: string
     server_time: Date

@@ -11,10 +11,20 @@ describe('Press service', () => {
     vi.stubEnv('VITE_API_BASE_URL', 'https://api.example')
     const order = { id: '11111111-1111-4111-8111-111111111111', orderNumber: 'FO-2026-001004' }
     const shippingUser = { authUserId: '66666666-6666-4666-8666-666666666666', displayName: 'Shipping User', email: 'shipping@example.com' }
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ orders: [order] }), { status: 200, headers: { 'content-type': 'application/json' } }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ users: [shippingUser] }), { status: 200, headers: { 'content-type': 'application/json' } }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ order: { ...order, status: 'Ready to Ship' } }), { status: 200, headers: { 'content-type': 'application/json' } }))
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ orders: [order] }), { status: 200, headers: { 'content-type': 'application/json' } }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ users: [shippingUser] }), { status: 200, headers: { 'content-type': 'application/json' } }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ order: { ...order, status: 'Ready to Ship' } }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(listPressOrders()).resolves.toEqual([order])

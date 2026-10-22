@@ -21,9 +21,7 @@ type AuthResponse = {
 
 export class AuthServiceNotConfiguredError extends Error {
   constructor() {
-    super(
-      'The Flowline API URL is not configured. Add VITE_API_BASE_URL to frontend/.env.',
-    )
+    super('The Flowline API URL is not configured. Add VITE_API_BASE_URL to frontend/.env.')
     this.name = 'AuthServiceNotConfiguredError'
   }
 }
@@ -46,17 +44,12 @@ async function authRequest<T>(path: string, payload: object): Promise<T> {
     })
   } catch (error) {
     if (error instanceof AuthServiceNotConfiguredError) throw error
-    throw new Error(
-      'Unable to reach the Flowline API. Check the API URL and network connection.',
-      { cause: error },
-    )
+    throw new Error('Unable to reach the Flowline API. Check the API URL and network connection.', { cause: error })
   }
 
   const body = (await response.json().catch(() => ({}))) as AuthErrorPayload
   if (!response.ok || body.error) {
-    throw new Error(
-      body.error?.message ?? body.message ?? 'Authentication request failed.',
-    )
+    throw new Error(body.error?.message ?? body.message ?? 'Authentication request failed.')
   }
 
   return body as T
@@ -69,9 +62,7 @@ export async function signIn(values: LoginValues): Promise<AuthResponse> {
   })
 }
 
-export async function registerAccount(
-  values: RegisterValues,
-): Promise<AuthResponse> {
+export async function registerAccount(values: RegisterValues): Promise<AuthResponse> {
   return authRequest<AuthResponse>('/api/v1/auth/register', {
     fullName: values.fullName.trim(),
     email: values.email.trim().toLowerCase(),

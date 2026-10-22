@@ -12,6 +12,9 @@ import { PostgresIssueService } from './issue-service.js'
 import { PostgresPressService } from './press-service.js'
 import { PostgresShippingService } from './shipping-service.js'
 import { PostgresHoldService } from './hold-service.js'
+import { PostgresManagerService } from './manager-service.js'
+import { PostgresAdminService } from './admin-service.js'
+import { PostgresActivityService } from './activity-service.js'
 
 const config = getConfig()
 const pool = createDatabasePool(config.DATABASE_URL)
@@ -24,8 +27,11 @@ const rdService = new PostgresRdService(pool, notificationHub)
 const planningService = new PostgresPlanningService(pool, notificationHub)
 const issueService = new PostgresIssueService(pool, notificationHub)
 const pressService = new PostgresPressService(pool, notificationHub)
-const shippingService = new PostgresShippingService(pool)
+const shippingService = new PostgresShippingService(pool, notificationHub)
 const holdService = new PostgresHoldService(pool, notificationHub)
+const managerService = new PostgresManagerService(pool, notificationHub)
+const adminService = new PostgresAdminService(pool)
+const activityService = new PostgresActivityService(pool)
 const app = buildApp({
   frontendOrigin: config.FRONTEND_ORIGIN,
   secureCookies: config.NODE_ENV === 'production',
@@ -42,6 +48,9 @@ const app = buildApp({
   pressService,
   shippingService,
   holdService,
+  managerService,
+  adminService,
+  activityService,
 })
 
 const close = async (signal: string) => {

@@ -62,12 +62,7 @@ export class PlanningRequestError extends Error {
   readonly code: string
   readonly fields: string[]
 
-  constructor(
-    status: number,
-    code: string,
-    message: string,
-    fields: string[] = [],
-  ) {
+  constructor(status: number, code: string, message: string, fields: string[] = []) {
     super(message)
     this.name = 'PlanningRequestError'
     this.status = status
@@ -85,7 +80,12 @@ function apiBase() {
 async function parse<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => ({}))) as ErrorBody
   if (!response.ok) {
-    throw new PlanningRequestError(response.status, body.error?.code ?? 'REQUEST_FAILED', body.error?.message ?? 'The Planning request failed.', body.error?.fields ?? [])
+    throw new PlanningRequestError(
+      response.status,
+      body.error?.code ?? 'REQUEST_FAILED',
+      body.error?.message ?? 'The Planning request failed.',
+      body.error?.fields ?? [],
+    )
   }
   return body as T
 }
@@ -112,17 +112,21 @@ export async function getPlanningOrder(orderId: string) {
 }
 
 export async function savePlanningAssessment(orderId: string, input: PlanningAssessmentInput) {
-  return (await request<{ order: PlanningOrderDetail }>(`/api/v1/planning/orders/${orderId}/assessment`, {
-    method: 'PATCH',
-    body: JSON.stringify(input),
-  })).order
+  return (
+    await request<{ order: PlanningOrderDetail }>(`/api/v1/planning/orders/${orderId}/assessment`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    })
+  ).order
 }
 
 export async function releasePlanningOrder(orderId: string, input: PlanningAssessmentInput) {
-  return (await request<{ order: PlanningOrderDetail }>(`/api/v1/planning/orders/${orderId}/release`, {
-    method: 'POST',
-    body: JSON.stringify(input),
-  })).order
+  return (
+    await request<{ order: PlanningOrderDetail }>(`/api/v1/planning/orders/${orderId}/release`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+  ).order
 }
 
 export async function downloadPlanningAttachment(orderId: string, attachmentId: string, fileName: string) {

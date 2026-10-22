@@ -1,0 +1,44 @@
+.admin-workspace .ui-card {
+  padding: 24px;
+}
+.admin-workspace header {
+  border-bottom: 1px solid #dfe5e9;
+  padding-bottom: 16px;
+}
+.admin-workspace header p {
+  margin: 0;
+  color: #137c8b;
+  font-size: 12px;
+}
+.admin-workspace h2 {
+  margin: 6px 0;
+}
+.admin-workspace header span,
+.admin-row small {
+  color: #718096;
+}
+.admin-table {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+.admin-row {
+  display: grid;
+  grid-template-columns: 1fr 150px 150px 90px;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #dfe5e9;
+  border-radius: 8px;
+}
+.admin-row small {
+  display: block;
+}
+@media (max-width: 700px) {
+  .admin-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .admin-row button {
+    grid-column: 1/-1;
+  }
+}

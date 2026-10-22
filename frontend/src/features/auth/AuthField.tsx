@@ -10,14 +10,7 @@ type AuthFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   hint?: string
 }
 
-export function AuthField({
-  id,
-  label,
-  error,
-  hint,
-  type = 'text',
-  ...inputProps
-}: AuthFieldProps) {
+export function AuthField({ id, label, error, hint, type = 'text', ...inputProps }: AuthFieldProps) {
   const isPassword = type === 'password'
   const [passwordVisible, setPasswordVisible] = useState(false)
   const descriptionId = error ? `${id}-error` : hint ? `${id}-hint` : undefined
@@ -45,11 +38,7 @@ export function AuthField({
             onClick={() => setPasswordVisible((visible) => !visible)}
             aria-label={passwordVisible ? 'Hide password' : 'Show password'}
           >
-            {passwordVisible ? (
-              <EyeOff size={19} aria-hidden="true" />
-            ) : (
-              <Eye size={19} aria-hidden="true" />
-            )}
+            {passwordVisible ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}
           </Button>
         ) : null}
       </div>

@@ -58,4 +58,12 @@ export const roleWorkspaces: Record<DashboardRole, RoleWorkspace> = {
     queueTitle: 'Orders requiring attention',
     primaryAction: 'Review exceptions',
   },
+  SYSTEM_ADMIN: {
+    label: 'System Administrator',
+    eyebrow: 'Administration',
+    heading: 'User access management',
+    description: 'Activate accounts and maintain role assignments.',
+    queueTitle: 'User accounts',
+    primaryAction: 'Manage users',
+  },
 }

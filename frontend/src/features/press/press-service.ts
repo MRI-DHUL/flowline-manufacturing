@@ -34,6 +34,8 @@ export type PressOrderDetail = PressOrderSummary & {
     correctiveAction: string | null
     reportedAt: string
     resolvedAt: string | null
+    status: string
+    reworkOwnerAuthUserId: string | null
   }>
 }
 
@@ -63,10 +65,16 @@ async function request<T>(path: string, init?: RequestInit) {
   const response = await fetch(`${apiBase()}${path}`, {
     credentials: 'include',
     ...init,
-    headers: { 'content-type': 'application/json', ...init?.headers },
+    headers: { ...(init?.body !== undefined ? { 'content-type': 'application/json' } : {}), ...init?.headers },
   })
   const body = (await response.json().catch(() => ({}))) as ErrorBody
-  if (!response.ok) throw new PressRequestError(response.status, body.error?.code ?? 'REQUEST_FAILED', body.error?.message ?? 'The Press request failed.', body.error?.fields ?? [])
+  if (!response.ok)
+    throw new PressRequestError(
+      response.status,
+      body.error?.code ?? 'REQUEST_FAILED',
+      body.error?.message ?? 'The Press request failed.',
+      body.error?.fields ?? [],
+    )
   return body as T
 }
 
@@ -83,14 +91,32 @@ export async function getPressOrder(orderId: string) {
 }
 
 async function orderAction(orderId: string, action: string, body?: unknown) {
-  return (await request<{ order: PressOrderDetail }>(`/api/v1/press/orders/${orderId}/${action}`, {
-    method: 'POST',
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })).order
+  return (
+    await request<{ order: PressOrderDetail }>(`/api/v1/press/orders/${orderId}/${action}`, {
+      method: 'POST',
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  ).order
 }
 
-export function acceptPressOrder(orderId: string) { return orderAction(orderId, 'accept') }
-export function startPressOrder(orderId: string) { return orderAction(orderId, 'start') }
-export function pausePressOrder(orderId: string, reason: string) { return orderAction(orderId, 'pause', { reason }) }
-export function reportProductionIssue(orderId: string, input: { category: string; notes: string; correctiveAction: string }) { return orderAction(orderId, 'production-issues', input) }
-export function completePressOrder(orderId: string, input: { goodQuantity: number; wasteQuantity: number; notes: string; shippingUserAuthUserId: string }) { return orderAction(orderId, 'complete', input) }
+export function acceptPressOrder(orderId: string) {
+  return orderAction(orderId, 'accept')
+}
+export function startPressOrder(orderId: string) {
+  return orderAction(orderId, 'start')
+}
+export function pausePressOrder(orderId: string, reason: string) {
+  return orderAction(orderId, 'pause', { reason })
+}
+export function reportProductionIssue(orderId: string, input: { category: string; notes: string; correctiveAction: string }) {
+  return orderAction(orderId, 'production-issues', input)
+}
+export function resolveProductionIssue(orderId: string, input: { action: 'RESUME' | 'REVIEW'; resolution: string }) {
+  return orderAction(orderId, 'rework/resolve', input)
+}
+export function completePressOrder(
+  orderId: string,
+  input: { goodQuantity: number; wasteQuantity: number; notes: string; shippingUserAuthUserId: string },
+) {
+  return orderAction(orderId, 'complete', input)
+}

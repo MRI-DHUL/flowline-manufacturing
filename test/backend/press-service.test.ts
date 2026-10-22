@@ -20,14 +20,18 @@ describe('Press service gates', () => {
   it('requires production quantities and a Shipping assignee before completion', async () => {
     const { pool, service } = createService()
 
-    await expect(service.complete(pressUser, 'order-1', {
-      goodQuantity: 0,
-      wasteQuantity: -1,
-      shippingUserAuthUserId: null,
-    })).rejects.toEqual(expect.objectContaining<Partial<PressError>>({
-      code: 'COMPLETION_INCOMPLETE',
-      fields: ['goodQuantity', 'wasteQuantity', 'shippingUserAuthUserId'],
-    }))
+    await expect(
+      service.complete(pressUser, 'order-1', {
+        goodQuantity: 0,
+        wasteQuantity: -1,
+        shippingUserAuthUserId: null,
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<PressError>>({
+        code: 'COMPLETION_INCOMPLETE',
+        fields: ['goodQuantity', 'wasteQuantity', 'shippingUserAuthUserId'],
+      }),
+    )
     expect(pool.connect).not.toHaveBeenCalled()
   })
 

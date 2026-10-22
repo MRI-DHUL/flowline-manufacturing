@@ -12,6 +12,7 @@ const issueSchema = z.object({
   notes: z.string().trim().min(10).max(3000),
   correctiveAction: z.string().max(3000).nullable().optional(),
 })
+const reworkSchema = z.object({ action: z.enum(['RESUME', 'REVIEW']), resolution: z.string().trim().min(10).max(3000) })
 const completionSchema = z.object({
   goodQuantity: z.number().positive(),
   wasteQuantity: z.number().nonnegative(),
@@ -54,7 +55,9 @@ export function registerPressRoutes(app: FastifyInstance, authService: AuthServi
       const user = await authenticatedUser(request, reply, authService)
       if (!user) return
       return { orders: await pressService.listQueue(user) }
-    } catch (error) { return sendPressError(reply, error) }
+    } catch (error) {
+      return sendPressError(reply, error)
+    }
   })
 
   app.get('/api/v1/press/shipping-users', async (request, reply) => {
@@ -62,7 +65,9 @@ export function registerPressRoutes(app: FastifyInstance, authService: AuthServi
       const user = await authenticatedUser(request, reply, authService)
       if (!user) return
       return { users: await pressService.listShippingUsers(user) }
-    } catch (error) { return sendPressError(reply, error) }
+    } catch (error) {
+      return sendPressError(reply, error)
+    }
   })
 
   app.get('/api/v1/press/orders/:orderId', async (request, reply) => {
@@ -71,7 +76,9 @@ export function registerPressRoutes(app: FastifyInstance, authService: AuthServi
       if (!user) return
       const { orderId } = orderParams.parse(request.params)
       return { order: await pressService.getOrder(user, orderId) }
-    } catch (error) { return sendPressError(reply, error) }
+    } catch (error) {
+      return sendPressError(reply, error)
+    }
   })
 
   app.post('/api/v1/press/orders/:orderId/accept', async (request, reply) => {
@@ -80,7 +87,9 @@ export function registerPressRoutes(app: FastifyInstance, authService: AuthServi
       if (!user) return
       const { orderId } = orderParams.parse(request.params)
       return { order: await pressService.accept(user, orderId) }
-    } catch (error) { return sendPressError(reply, error) }
+    } catch (error) {
+      return sendPressError(reply, error)
+    }
   })
 
   app.post('/api/v1/press/orders/:orderId/start', async (request, reply) => {
@@ -89,7 +98,9 @@ export function registerPressRoutes(app: FastifyInstance, authService: AuthServi
       if (!user) return
       const { orderId } = orderParams.parse(request.params)
       return { order: await pressService.start(user, orderId) }
-    } catch (error) { return sendPressError(reply, error) }
+    } catch (error) {
+      return sendPressError(reply, error)
+    }
   })
 
   app.post('/api/v1/press/orders/:orderId/pause', async (request, reply) => {
@@ -99,7 +110,9 @@ export function registerPressRoutes(app: FastifyInstance, authService: AuthServi
       const { orderId } = orderParams.parse(request.params)
       const { reason } = pauseSchema.parse(request.body)
       return { order: await pressService.pause(user, orderId, reason) }
-    } catch (error) { return sendPressError(reply, error) }
+    } catch (error) {
+      return sendPressError(reply, error)
+    }
   })
 
   app.post('/api/v1/press/orders/:orderId/production-issues', async (request, reply) => {
@@ -108,7 +121,20 @@ export function registerPressRoutes(app: FastifyInstance, authService: AuthServi
       if (!user) return
       const { orderId } = orderParams.parse(request.params)
       return { order: await pressService.reportProductionIssue(user, orderId, issueSchema.parse(request.body)) }
-    } catch (error) { return sendPressError(reply, error) }
+    } catch (error) {
+      return sendPressError(reply, error)
+    }
+  })
+
+  app.post('/api/v1/press/orders/:orderId/rework/resolve', async (request, reply) => {
+    try {
+      const user = await authenticatedUser(request, reply, authService)
+      if (!user) return
+      const { orderId } = orderParams.parse(request.params)
+      return { order: await pressService.resolveProductionIssue(user, orderId, reworkSchema.parse(request.body)) }
+    } catch (error) {
+      return sendPressError(reply, error)
+    }
   })
 
   app.post('/api/v1/press/orders/:orderId/complete', async (request, reply) => {
@@ -117,6 +143,8 @@ export function registerPressRoutes(app: FastifyInstance, authService: AuthServi
       if (!user) return
       const { orderId } = orderParams.parse(request.params)
       return { order: await pressService.complete(user, orderId, completionSchema.parse(request.body) as PressCompletionInput) }
-    } catch (error) { return sendPressError(reply, error) }
+    } catch (error) {
+      return sendPressError(reply, error)
+    }
   })
 }

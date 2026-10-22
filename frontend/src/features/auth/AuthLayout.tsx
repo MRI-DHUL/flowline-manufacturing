@@ -9,13 +9,7 @@ type AuthLayoutProps = {
   footer: ReactNode
 }
 
-export function AuthLayout({
-  eyebrow,
-  title,
-  description,
-  children,
-  footer,
-}: AuthLayoutProps) {
+export function AuthLayout({ eyebrow, title, description, children, footer }: AuthLayoutProps) {
   return (
     <main className="auth-shell">
       <section className="auth-context" aria-labelledby="flowline-brand">

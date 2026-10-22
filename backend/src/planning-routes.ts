@@ -7,8 +7,8 @@ import type { PlanningAssessmentInput, PlanningService } from './planning-servic
 
 const orderParams = z.object({ orderId: z.uuid() })
 const attachmentParams = orderParams.extend({ attachmentId: z.uuid() })
-const optionalDate = z.preprocess((value) => value === '' ? null : value, z.iso.date().nullable().optional())
-const optionalUuid = z.preprocess((value) => value === '' ? null : value, z.uuid().nullable().optional())
+const optionalDate = z.preprocess((value) => (value === '' ? null : value), z.iso.date().nullable().optional())
+const optionalUuid = z.preprocess((value) => (value === '' ? null : value), z.uuid().nullable().optional())
 const assessmentSchema = z.object({
   materialStatus: z.enum(['PENDING', 'AVAILABLE', 'SHORTAGE']),
   shortageReason: z.string().max(3000).nullable().optional(),
