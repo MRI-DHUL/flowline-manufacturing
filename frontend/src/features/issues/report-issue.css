@@ -1,0 +1,26 @@
+.report-issue-trigger { flex: 0 0 auto; }
+.report-issue-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; padding: 20px; place-items: center; background: rgba(10, 27, 44, 0.58); }
+.report-issue-dialog { width: min(520px, 100%); overflow: hidden; background: #fff; border: 1px solid #cbd6e1; border-radius: 8px; box-shadow: 0 24px 70px rgba(7, 25, 43, 0.3); }
+.report-issue-dialog > header { display: flex; min-height: 68px; padding: 15px 17px; align-items: center; justify-content: space-between; gap: 16px; background: #fff6f4; border-bottom: 1px solid #ecd6d1; }
+.report-issue-dialog > header > div { display: flex; align-items: center; gap: 10px; color: #9b3127; }
+.report-issue-dialog > header span { display: grid; gap: 3px; }
+.report-issue-dialog > header strong { color: #5f2520; font-size: 14px; }
+.report-issue-dialog > header small { color: #8a625e; font-size: 9px; }
+.report-issue-dialog > header button { display: grid; width: 34px; height: 34px; padding: 0; place-items: center; color: #6b4d49; background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
+.report-issue-dialog > header button:hover { background: #f4ded9; }
+.report-issue-body { display: grid; gap: 13px; padding: 18px; }
+.report-issue-body label { display: grid; gap: 7px; color: #263b51; font-size: 10px; font-weight: 800; }
+.report-issue-body textarea { min-height: 130px; resize: vertical; }
+.report-issue-routing { padding: 11px 12px; background: #f3f7fa; border-left: 3px solid #2a7892; }
+.report-issue-routing strong { color: #173b63; font-size: 10px; }
+.report-issue-routing p { margin: 4px 0 0; color: #52647a; font-size: 9px; line-height: 1.5; }
+.report-issue-meta { display: flex; min-height: 18px; align-items: center; justify-content: space-between; gap: 12px; }
+.report-issue-meta span { margin-left: auto; color: #718096; font-size: 8px; }
+.report-issue-meta p { margin: 0; color: #a23228; font-size: 9px; }
+.report-issue-dialog > footer { display: flex; padding: 13px 18px 17px; justify-content: flex-end; gap: 9px; }
+@media (max-width: 560px) {
+  .report-issue-backdrop { padding: 12px; align-items: end; }
+  .report-issue-dialog { max-height: calc(100vh - 24px); overflow-y: auto; }
+  .report-issue-dialog > footer { flex-direction: column-reverse; }
+  .report-issue-dialog > footer button { width: 100%; }
+}

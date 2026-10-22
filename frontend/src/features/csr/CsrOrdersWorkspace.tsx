@@ -12,6 +12,7 @@ import { useDeferredValue, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../../components/toast/useToast'
 import { SegmentedTabs, Select, TextInput } from '../../components/ui'
+import { ReportIssueButton } from '../issues/ReportIssueButton'
 import { CsrOrderForm } from './CsrOrderForm'
 import {
   downloadCsrAttachment,
@@ -117,6 +118,7 @@ function OrderDetails({
               <p>{order.orderNumber} · {order.customerName ?? 'Customer not set'}</p>
             </div>
             <div className="csr-detail-actions">
+              <ReportIssueButton orderId={order.id} orderNumber={order.orderNumber} />
               {editable ? <button type="button" onClick={onEdit}><Edit3 size={16} />Edit</button> : null}
               {order.status === 'Draft' ? <button type="button" onClick={() => void submit()} disabled={busy}><Send size={16} />Submit</button> : null}
             </div>

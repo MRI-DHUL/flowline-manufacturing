@@ -2,6 +2,8 @@ import { CheckCircle2, CircleAlert, Download, FileText, RefreshCw, Send } from '
 import { useDeferredValue, useEffect, useState } from 'react'
 import { useToast } from '../../components/toast/useToast'
 import { Button, Card, FormField, Select, TextArea, TextInput } from '../../components/ui'
+import { ReportIssueButton } from '../issues/ReportIssueButton'
+import { HoldControls } from '../holds/HoldControls'
 import {
   downloadRdAttachment,
   getRdOrder,
@@ -86,7 +88,7 @@ function OrderDetail({ order, planners, onUpdated }: { order: RdOrderDetail; pla
           <h2>{order.productName ?? 'Product not set'}</h2>
           <p>{order.orderNumber} · {order.customerName ?? 'Customer not set'}</p>
         </div>
-        <div className="workflow-owner"><small>Technical owner</small><strong>R&amp;D</strong></div>
+        <div className="rd-detail-header-actions"><ReportIssueButton orderId={order.id} orderNumber={order.orderNumber} /><HoldControls orderId={order.id} orderNumber={order.orderNumber} status={order.status} stage={order.stage} defaultTeam="R&amp;D" /><div className="workflow-owner"><small>Technical owner</small><strong>R&amp;D</strong></div></div>
       </header>
       <div className="rd-detail-content">
         <dl className="rd-spec-grid">

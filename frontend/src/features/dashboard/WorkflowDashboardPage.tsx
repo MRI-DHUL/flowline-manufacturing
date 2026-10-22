@@ -1,7 +1,6 @@
 import {
   Bell,
   CheckCheck,
-  ChevronRight,
   CircleAlert,
   ClipboardList,
   Clock3,
@@ -18,6 +17,9 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useToast } from '../../components/toast/useToast'
 import { LoadingScreen } from '../../components/loading/LoadingScreen'
 import { RdWorkspace } from '../rd/RdWorkspace'
+import { PlanningWorkspace } from '../planning/PlanningWorkspace'
+import { PressWorkspace } from '../press/PressWorkspace'
+import { ShippingWorkspace } from '../shipping/ShippingWorkspace'
 import { Button, MetricCard, SegmentedTabs, Select, TextInput } from '../../components/ui'
 import { CsrOrdersWorkspace } from '../csr/CsrOrdersWorkspace'
 import { CsrOrderStatusPage } from '../csr/CsrOrderStatusPage'
@@ -31,6 +33,7 @@ import {
 } from './dashboard-service'
 import type { DashboardData, DashboardOrder } from './dashboard-service'
 import { listNotifications, markNotificationRead, openNotificationStream } from './notification-service'
+import { ReportIssueButton } from '../issues/ReportIssueButton'
 import type { DashboardNotification } from './notification-service'
 import './workflow-dashboard.css'
 
@@ -130,10 +133,10 @@ function OrderDetail({ order }: { order: DashboardOrder }) {
               <h2>{order.product}</h2>
               <p>{order.orderNumber} · {order.customer}</p>
             </div>
-            <div className="workflow-owner">
+            <div className="workflow-order-heading-actions"><ReportIssueButton orderId={order.id} orderNumber={order.orderNumber} /><div className="workflow-owner">
               <small>Current owner</small>
               <strong>{order.owner}</strong>
-            </div>
+            </div></div>
           </header>
 
           <StageStepper order={order} />
@@ -486,9 +489,9 @@ export function WorkflowDashboardPage() {
                 : 'Search, filter, and review orders assigned to your workspace.'}
             </span>
           </div>
-          {activeView === 'orders' && csrMode === 'list' ? (
-            <button type="button" onClick={handlePrimaryAction} disabled={data.role !== 'CSR' && data.orders.length === 0}>
-              {data.role === 'CSR' ? <Plus size={18} /> : <ChevronRight size={18} />}
+          {activeView === 'orders' && csrMode === 'list' && data.role === 'CSR' ? (
+            <button type="button" onClick={handlePrimaryAction}>
+              <Plus size={18} />
               {workspace.primaryAction}
             </button>
           ) : null}
@@ -516,6 +519,12 @@ export function WorkflowDashboardPage() {
             />
           ) : data.role === 'R&D' ? (
             <RdWorkspace />
+          ) : data.role === 'PLANNING' ? (
+            <PlanningWorkspace />
+          ) : data.role === 'PRESS' ? (
+            <PressWorkspace />
+          ) : data.role === 'SHIPPING' ? (
+            <ShippingWorkspace />
           ) : (
             <section className="workflow-workbench workflow-orders-view" aria-label="Order workspace">
           <aside className="workflow-queue">

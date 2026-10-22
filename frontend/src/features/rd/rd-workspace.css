@@ -10,6 +10,7 @@
 .rd-detail-header { display: flex; padding: 22px; align-items: start; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--wf-border); }
 .rd-detail-header h2 { margin: 9px 0 4px; color: var(--wf-navy); font-size: 21px; }
 .rd-detail-header p { margin: 0; color: #52647a; font-size: 10px; }
+.rd-detail-header-actions { display: flex; align-items: center; gap: 10px; }
 .rd-detail-content { padding: 22px; }
 .rd-spec-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0 0 22px; }
 .rd-spec-grid div { min-width: 0; padding: 11px; background: #f7f9fb; border-radius: 7px; }

@@ -15,6 +15,16 @@ import { registerNotificationRoutes } from './notification-routes.js'
 import type { NotificationHub, NotificationService } from './notification-service.js'
 import { registerRdRoutes } from './rd-routes.js'
 import type { RdService } from './rd-service.js'
+import { registerPlanningRoutes } from './planning-routes.js'
+import type { PlanningService } from './planning-service.js'
+import { registerIssueRoutes } from './issue-routes.js'
+import type { IssueService } from './issue-service.js'
+import { registerPressRoutes } from './press-routes.js'
+import type { PressService } from './press-service.js'
+import { registerShippingRoutes } from './shipping-routes.js'
+import type { ShippingService } from './shipping-service.js'
+import { registerHoldRoutes } from './hold-routes.js'
+import type { HoldService } from './hold-service.js'
 
 type BuildAppOptions = {
   frontendOrigin: string
@@ -27,6 +37,11 @@ type BuildAppOptions = {
   notificationService: NotificationService
   notificationHub: NotificationHub
   rdService: RdService
+  planningService: PlanningService
+  issueService: IssueService
+  pressService: PressService
+  shippingService: ShippingService
+  holdService?: HoldService
 }
 
 export function buildApp(options: BuildAppOptions) {
@@ -47,6 +62,11 @@ export function buildApp(options: BuildAppOptions) {
   registerDashboardRoutes(app, options.authService, options.dashboardService)
   registerCsrRoutes(app, options.authService, options.csrService)
   registerRdRoutes(app, options.authService, options.rdService)
+  registerPlanningRoutes(app, options.authService, options.planningService)
+  registerIssueRoutes(app, options.authService, options.issueService)
+  registerPressRoutes(app, options.authService, options.pressService)
+  registerShippingRoutes(app, options.authService, options.shippingService)
+  if (options.holdService) registerHoldRoutes(app, options.authService, options.holdService)
   app.after(() => {
     registerNotificationRoutes(app, options.authService, options.notificationService, options.notificationHub)
   })

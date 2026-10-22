@@ -1,6 +1,6 @@
-import type { ComponentPropsWithoutRef } from 'react'
+import type { ComponentPropsWithRef } from 'react'
 import { cx } from './ui-utils'
 
-export function TextArea({ className, ...props }: ComponentPropsWithoutRef<'textarea'> & { className?: string }) {
+export function TextArea({ className, ...props }: ComponentPropsWithRef<'textarea'> & { className?: string }) {
   return <textarea className={cx('ui-textarea', className)} {...props} />
 }

@@ -7,6 +7,11 @@ import { checkDatabase, createDatabasePool } from './database.js'
 import { getLoggerOptions } from './logger.js'
 import { NotificationHub, PostgresNotificationService } from './notification-service.js'
 import { PostgresRdService } from './rd-service.js'
+import { PostgresPlanningService } from './planning-service.js'
+import { PostgresIssueService } from './issue-service.js'
+import { PostgresPressService } from './press-service.js'
+import { PostgresShippingService } from './shipping-service.js'
+import { PostgresHoldService } from './hold-service.js'
 
 const config = getConfig()
 const pool = createDatabasePool(config.DATABASE_URL)
@@ -16,6 +21,11 @@ const notificationService = new PostgresNotificationService(pool)
 const notificationHub = new NotificationHub()
 const csrService = new PostgresCsrService(pool, notificationHub)
 const rdService = new PostgresRdService(pool, notificationHub)
+const planningService = new PostgresPlanningService(pool, notificationHub)
+const issueService = new PostgresIssueService(pool, notificationHub)
+const pressService = new PostgresPressService(pool, notificationHub)
+const shippingService = new PostgresShippingService(pool)
+const holdService = new PostgresHoldService(pool, notificationHub)
 const app = buildApp({
   frontendOrigin: config.FRONTEND_ORIGIN,
   secureCookies: config.NODE_ENV === 'production',
@@ -27,6 +37,11 @@ const app = buildApp({
   notificationService,
   notificationHub,
   rdService,
+  planningService,
+  issueService,
+  pressService,
+  shippingService,
+  holdService,
 })
 
 const close = async (signal: string) => {
