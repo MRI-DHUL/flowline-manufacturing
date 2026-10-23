@@ -1,11 +1,8 @@
 name: Production Smoke
 
 on:
-  workflow_run:
-    workflows:
-      - CI
-    types:
-      - completed
+  schedule:
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -14,21 +11,25 @@ permissions:
 jobs:
   smoke:
     name: Verify production
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-24.04
     steps:
+      - name: Resolve latest tested commit
+        shell: bash
+        run: |
+          expected_commit="$(curl --fail --silent --show-error --max-time 30 \
+            https://api.github.com/repos/MRI-DHUL/flowline-manufacturing/commits/main \
+            | sed -n 's/.*"sha": "\([a-f0-9]\{40\}\)".*/\1/p' \
+            | head -n 1)"
+          test -n "$expected_commit"
+          echo "EXPECTED_COMMIT=$expected_commit" >> "$GITHUB_ENV"
       - name: Wait for backend health
         shell: bash
-        env:
-          EXPECTED_COMMIT: ${{ github.event.workflow_run.head_sha }}
         run: |
           for attempt in {1..30}; do
             response="$(curl --fail --silent --show-error --max-time 20 \
               https://flowline-manufacturing-api.onrender.com/health || true)"
             if echo "$response" | grep --quiet '"status":"ok"'; then
-              if [ -z "$EXPECTED_COMMIT" ] || echo "$response" | grep --quiet "\"commit\":\"$EXPECTED_COMMIT\""; then
+              if echo "$response" | grep --quiet "\"commit\":\"$EXPECTED_COMMIT\""; then
                 exit 0
               fi
             fi
