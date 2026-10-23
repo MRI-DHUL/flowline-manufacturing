@@ -1,5 +1,8 @@
 # Flowline Manufacturing
 
+[![CI](https://github.com/MRI-DHUL/flowline-manufacturing/actions/workflows/ci.yml/badge.svg)](https://github.com/MRI-DHUL/flowline-manufacturing/actions/workflows/ci.yml)
+[![Production Smoke](https://github.com/MRI-DHUL/flowline-manufacturing/actions/workflows/production-smoke.yml/badge.svg)](https://github.com/MRI-DHUL/flowline-manufacturing/actions/workflows/production-smoke.yml)
+
 Role-based manufacturing order management system for order tracking, technical feasibility, production planning, manufacturing operations, dispatch, and delivery.
 
 ## Workflow
