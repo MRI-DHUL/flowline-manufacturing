@@ -21,16 +21,20 @@ jobs:
     steps:
       - name: Wait for backend health
         shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ github.event.workflow_run.head_sha }}
         run: |
           for attempt in {1..30}; do
-            if curl --fail --silent --show-error --max-time 20 \
-              https://flowline-manufacturing-api.onrender.com/health \
-              | grep --quiet '"status":"ok"'; then
-              exit 0
+            response="$(curl --fail --silent --show-error --max-time 20 \
+              https://flowline-manufacturing-api.onrender.com/health || true)"
+            if echo "$response" | grep --quiet '"status":"ok"'; then
+              if [ -z "$EXPECTED_COMMIT" ] || echo "$response" | grep --quiet "\"commit\":\"$EXPECTED_COMMIT\""; then
+                exit 0
+              fi
             fi
             sleep 20
           done
-          echo "Backend health check did not become ready." >&2
+          echo "Production did not reach the expected commit: $EXPECTED_COMMIT" >&2
           exit 1
       - name: Verify database health
         shell: bash

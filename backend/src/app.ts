@@ -97,6 +97,7 @@ export function buildApp(options: BuildAppOptions) {
   app.get('/health', async () => ({
     status: 'ok',
     service: 'flowline-backend',
+    ...(process.env.RENDER_GIT_COMMIT ? { commit: process.env.RENDER_GIT_COMMIT } : {}),
   }))
 
   app.get('/api/v1/health/database', async (_request, reply) => {

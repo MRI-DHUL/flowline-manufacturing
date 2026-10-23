@@ -597,4 +597,4 @@ Workflow files:
 .github/workflows/production-smoke.yml
 ```
 
-Both Render services should use **After CI Checks Pass** auto-deploy. After CI succeeds on `main`, Render builds the connected commit. The Production Smoke workflow checks the backend, database connection, frontend root, and a direct SPA route. It can also be run manually from GitHub Actions.
+Both Render services should use **After CI Checks Pass** auto-deploy. After CI succeeds on `main`, Render builds the connected commit. The Production Smoke workflow waits until the backend `/health` response reports the exact tested commit, then checks the database connection, frontend root, and a direct SPA route. It can also be run manually from GitHub Actions.
