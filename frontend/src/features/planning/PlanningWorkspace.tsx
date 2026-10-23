@@ -4,15 +4,7 @@ import { useToast } from '../../components/toast/useToast'
 import { Button, Card, FormField, Select, TextArea, TextInput } from '../../components/ui'
 import { ReportIssueButton } from '../issues/ReportIssueButton'
 import { HoldControls } from '../holds/HoldControls'
-import {
-  downloadPlanningAttachment,
-  getPlanningOrder,
-  listPlanningOrders,
-  listPlanningResources,
-  PlanningRequestError,
-  releasePlanningOrder,
-  savePlanningAssessment,
-} from './planning-service'
+import { downloadPlanningAttachment, getPlanningOrder, listPlanningOrders, listPlanningResources, PlanningRequestError, releasePlanningOrder, savePlanningAssessment } from './planning-service'
 import type { PlanningAssessmentInput, PlanningOrderDetail, PlanningOrderSummary, PlanningResources } from './planning-service'
 import './planning-workspace.css'
 
@@ -50,17 +42,7 @@ function detailValues(order: PlanningOrderDetail): PlanningAssessmentInput {
   }
 }
 
-function PlanningDetail({
-  order,
-  resources,
-  onSaved,
-  onReleased,
-}: {
-  order: PlanningOrderDetail
-  resources: PlanningResources
-  onSaved: (order: PlanningOrderDetail) => void
-  onReleased: (orderId: string) => void
-}) {
+function PlanningDetail({ order, resources, onSaved, onReleased }: { order: PlanningOrderDetail; resources: PlanningResources; onSaved: (order: PlanningOrderDetail) => void; onReleased: (orderId: string) => void }) {
   const { showToast } = useToast()
   const [values, setValues] = useState(() => detailValues(order))
   const [fieldErrors, setFieldErrors] = useState<string[]>([])
@@ -191,11 +173,7 @@ function PlanningDetail({
           <section className="planning-files">
             <h3>Supporting files</h3>
             {order.attachments.map((attachment) => (
-              <button
-                type="button"
-                key={attachment.id}
-                onClick={() => void downloadPlanningAttachment(order.id, attachment.id, attachment.fileName)}
-              >
+              <button type="button" key={attachment.id} onClick={() => void downloadPlanningAttachment(order.id, attachment.id, attachment.fileName)}>
                 <FileText size={17} />
                 <span>
                   <strong>{attachment.fileName}</strong>
@@ -231,17 +209,8 @@ function PlanningDetail({
             </div>
           ) : null}
           <div className="planning-form-grid">
-            <FormField
-              label="Assign to Press user on completion"
-              required
-              className="wide"
-              hint="The completed plan is sent only to this active Press user."
-            >
-              <Select
-                value={values.pressUserAuthUserId}
-                onChange={(event) => update('pressUserAuthUserId', event.target.value)}
-                aria-invalid={fieldErrors.includes('pressUserAuthUserId')}
-              >
+            <FormField label="Assign to Press user on completion" required className="wide" hint="The completed plan is sent only to this active Press user.">
+              <Select value={values.pressUserAuthUserId} onChange={(event) => update('pressUserAuthUserId', event.target.value)} aria-invalid={fieldErrors.includes('pressUserAuthUserId')}>
                 <option value="">Select active Press user</option>
                 {resources.pressUsers.map((pressUser) => (
                   <option key={pressUser.authUserId} value={pressUser.authUserId}>
@@ -251,22 +220,14 @@ function PlanningDetail({
               </Select>
             </FormField>
             <FormField label="Material status" required>
-              <Select
-                value={values.materialStatus}
-                onChange={(event) => update('materialStatus', event.target.value as PlanningAssessmentInput['materialStatus'])}
-                aria-invalid={fieldErrors.includes('materialStatus')}
-              >
+              <Select value={values.materialStatus} onChange={(event) => update('materialStatus', event.target.value as PlanningAssessmentInput['materialStatus'])} aria-invalid={fieldErrors.includes('materialStatus')}>
                 <option value="PENDING">Pending confirmation</option>
                 <option value="AVAILABLE">Available</option>
                 <option value="SHORTAGE">Shortage</option>
               </Select>
             </FormField>
             <FormField label="Capacity status" required>
-              <Select
-                value={values.capacityStatus}
-                onChange={(event) => update('capacityStatus', event.target.value as PlanningAssessmentInput['capacityStatus'])}
-                aria-invalid={fieldErrors.includes('capacityStatus')}
-              >
+              <Select value={values.capacityStatus} onChange={(event) => update('capacityStatus', event.target.value as PlanningAssessmentInput['capacityStatus'])} aria-invalid={fieldErrors.includes('capacityStatus')}>
                 <option value="PENDING">Pending confirmation</option>
                 <option value="AVAILABLE">Available</option>
                 <option value="UNAVAILABLE">Unavailable</option>
@@ -275,28 +236,15 @@ function PlanningDetail({
             {values.materialStatus === 'SHORTAGE' ? (
               <>
                 <FormField label="Shortage reason" required className="wide">
-                  <TextArea
-                    value={values.shortageReason}
-                    onChange={(event) => update('shortageReason', event.target.value)}
-                    aria-invalid={fieldErrors.includes('shortageReason')}
-                  />
+                  <TextArea value={values.shortageReason} onChange={(event) => update('shortageReason', event.target.value)} aria-invalid={fieldErrors.includes('shortageReason')} />
                 </FormField>
                 <FormField label="Expected material date" required>
-                  <TextInput
-                    type="date"
-                    value={values.expectedMaterialDate}
-                    onChange={(event) => update('expectedMaterialDate', event.target.value)}
-                    aria-invalid={fieldErrors.includes('expectedMaterialDate')}
-                  />
+                  <TextInput type="date" value={values.expectedMaterialDate} onChange={(event) => update('expectedMaterialDate', event.target.value)} aria-invalid={fieldErrors.includes('expectedMaterialDate')} />
                 </FormField>
               </>
             ) : null}
             <FormField label="Production line" required>
-              <Select
-                value={values.productionLineId}
-                onChange={(event) => update('productionLineId', event.target.value)}
-                aria-invalid={fieldErrors.includes('productionLineId')}
-              >
+              <Select value={values.productionLineId} onChange={(event) => update('productionLineId', event.target.value)} aria-invalid={fieldErrors.includes('productionLineId')}>
                 <option value="">Select active line</option>
                 {resources.productionLines.map((line) => (
                   <option key={line.id} value={line.id}>
@@ -306,12 +254,7 @@ function PlanningDetail({
               </Select>
             </FormField>
             <FormField label="Planned production date" required>
-              <TextInput
-                type="date"
-                value={values.plannedProductionDate}
-                onChange={(event) => update('plannedProductionDate', event.target.value)}
-                aria-invalid={fieldErrors.includes('plannedProductionDate')}
-              />
+              <TextInput type="date" value={values.plannedProductionDate} onChange={(event) => update('plannedProductionDate', event.target.value)} aria-invalid={fieldErrors.includes('plannedProductionDate')} />
             </FormField>
             <FormField label="Readiness" required>
               <Select
@@ -325,11 +268,7 @@ function PlanningDetail({
               </Select>
             </FormField>
             <FormField label="Planning notes" className="wide">
-              <TextArea
-                value={values.planningNotes}
-                onChange={(event) => update('planningNotes', event.target.value)}
-                placeholder="Schedule, capacity, or handoff notes"
-              />
+              <TextArea value={values.planningNotes} onChange={(event) => update('planningNotes', event.target.value)} placeholder="Schedule, capacity, or handoff notes" />
             </FormField>
           </div>
           <footer>
@@ -368,8 +307,7 @@ export function PlanningWorkspace() {
         if (!nextOrders.length) setDetailLoading(false)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'Planning queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Planning queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -387,8 +325,7 @@ export function PlanningWorkspace() {
         if (!cancelled) setDetail(order)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'Planning order unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Planning order unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setDetailLoading(false)
@@ -398,9 +335,7 @@ export function PlanningWorkspace() {
     }
   }, [selectedId, showToast])
 
-  const visibleOrders = orders.filter((order) =>
-    `${order.orderNumber} ${order.customerName ?? ''} ${order.productName ?? ''}`.toLowerCase().includes(deferredSearch),
-  )
+  const visibleOrders = orders.filter((order) => `${order.orderNumber} ${order.customerName ?? ''} ${order.productName ?? ''}`.toLowerCase().includes(deferredSearch))
 
   function removeReleased(orderId: string) {
     const remaining = orders.filter((order) => order.id !== orderId)
@@ -428,12 +363,7 @@ export function PlanningWorkspace() {
         <div className="workflow-filters">
           <label>
             <span>Search assigned orders</span>
-            <TextInput
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Order, customer, product"
-            />
+            <TextInput type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Order, customer, product" />
           </label>
         </div>
         <div className="workflow-order-list">

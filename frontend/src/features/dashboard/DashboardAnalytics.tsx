@@ -83,32 +83,14 @@ function OrderTrendChart({ data }: { data: DashboardData['analytics']['trend'] }
           <XAxis dataKey="label" tick={{ fill: '#52647a', fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis allowDecimals={false} tick={{ fill: '#718096', fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={tooltipStyle} />
-          <Line
-            type="monotone"
-            dataKey="count"
-            name="New orders"
-            stroke="#1f8a70"
-            strokeWidth={3}
-            dot={{ r: 3, fill: '#fff', strokeWidth: 2 }}
-            activeDot={{ r: 5 }}
-          />
+          <Line type="monotone" dataKey="count" name="New orders" stroke="#1f8a70" strokeWidth={3} dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 5 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
   )
 }
 
-export function DashboardAnalytics({
-  data,
-  onViewOrders,
-  onRefresh,
-  onLogout,
-}: {
-  data: DashboardData
-  onViewOrders: () => void
-  onRefresh: () => void
-  onLogout: () => void
-}) {
+export function DashboardAnalytics({ data, onViewOrders, onRefresh, onLogout }: { data: DashboardData; onViewOrders: () => void; onRefresh: () => void; onLogout: () => void }) {
   return (
     <>
       <section className="analytics-grid" aria-label="Operational charts">
@@ -128,11 +110,26 @@ export function DashboardAnalytics({
         </Card>
         <Card className="analytics-panel analytics-panel-wide">
           <header>
-            <p>Last 7 days</p>
+            <p>Sunday to Saturday</p>
             <h2>New order trend</h2>
           </header>
           <OrderTrendChart data={data.analytics.trend} />
         </Card>
+      </section>
+
+      <section className="delivery-summary" aria-label="Delivery completion summary">
+        <header>
+          <div>
+            <p>Delivery control</p>
+            <h2>Completion pulse</h2>
+          </div>
+          <small>{data.analytics.delivery.weekStart} to {data.analytics.delivery.weekEnd}</small>
+        </header>
+        <div className="delivery-summary-grid">
+          <article><span>Delivered</span><strong>{data.analytics.delivery.delivered}</strong></article>
+          <article><span>On hold</span><strong>{data.analytics.delivery.onHold}</strong></article>
+          <article><span>Open issues</span><strong>{data.analytics.delivery.openIssues}</strong></article>
+        </div>
       </section>
 
       <section className="quick-actions" aria-labelledby="quick-actions-title">

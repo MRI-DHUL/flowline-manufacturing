@@ -1,16 +1,6 @@
 import { cx } from './ui-utils'
 
-export function SegmentedTabs({
-  options,
-  value,
-  onChange,
-  className,
-}: {
-  options: Array<{ value: string; label: string }>
-  value: string
-  onChange: (value: string) => void
-  className?: string
-}) {
+export function SegmentedTabs({ options, value, onChange, className }: { options: Array<{ value: string; label: string }>; value: string; onChange: (value: string) => void; className?: string }) {
   return (
     <div className={cx('ui-segmented-tabs', className)} role="tablist">
       {options.map((option) => (

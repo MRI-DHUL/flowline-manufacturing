@@ -21,9 +21,7 @@ export function ManagerWorkspace() {
         setOrders(items)
         setSelected(items[0] ?? null)
       })
-      .catch((error) =>
-        showToast({ title: 'Manager queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' }),
-      )
+      .catch((error) => showToast({ title: 'Manager queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' }))
   }, [showToast])
   async function upload() {
     if (!selected || !proof) return
@@ -55,11 +53,7 @@ export function ManagerWorkspace() {
       setBusy(false)
     }
   }
-  const visibleOrders = orders.filter((order) =>
-    `${order.orderNumber} ${order.productName ?? ''} ${order.customerName ?? ''} ${order.destination ?? ''}`
-      .toLowerCase()
-      .includes(search.trim().toLowerCase()),
-  )
+  const visibleOrders = orders.filter((order) => `${order.orderNumber} ${order.productName ?? ''} ${order.customerName ?? ''} ${order.destination ?? ''}`.toLowerCase().includes(search.trim().toLowerCase()))
   return (
     <section className="manager-workspace" aria-label="Manager delivery workspace">
       <aside className="manager-queue">
@@ -95,7 +89,7 @@ export function ManagerWorkspace() {
         <Card className="manager-detail">
           <header>
             <div>
-              <span className="manager-status">Manager Review</span>
+              <span className="manager-status">{selected.status}</span>
               <h2>{selected.productName ?? 'Product not set'}</h2>
               <p>
                 {selected.orderNumber} · {selected.customerName ?? 'Customer not set'}
@@ -121,7 +115,7 @@ export function ManagerWorkspace() {
               <dd>{selected.shipmentStatus}</dd>
             </div>
           </dl>
-          <section className="manager-delivery-panel">
+          {selected.status === 'Delivered' ? <section className="manager-delivery-panel manager-delivery-complete"><header><CheckCircle2 size={19} /><div><strong>Delivered to client</strong><small>Delivery confirmation has been recorded.</small></div></header></section> : <section className="manager-delivery-panel">
             <header>
               <FileCheck2 size={19} />
               <div>
@@ -156,17 +150,12 @@ export function ManagerWorkspace() {
               </FormField>
             </div>
             <footer>
-              <Button
-                variant="primary"
-                type="button"
-                disabled={busy || !selected.proofAttachments.length || !receivedBy.trim() || !actualDeliveryAt}
-                onClick={() => void confirm()}
-              >
+              <Button variant="primary" type="button" disabled={busy || !selected.proofAttachments.length || !receivedBy.trim() || !actualDeliveryAt} onClick={() => void confirm()}>
                 <CheckCircle2 size={16} />
                 Confirm delivered
               </Button>
             </footer>
-          </section>
+          </section>}
         </Card>
       ) : (
         <Card className="manager-detail manager-detail-empty">

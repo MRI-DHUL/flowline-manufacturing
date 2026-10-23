@@ -25,12 +25,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastRecord; onDismiss: (id: s
   }, [onDismiss, toast.duration, toast.id])
 
   return (
-    <article
-      className="toast-item"
-      data-tone={toast.tone}
-      role={toast.tone === 'error' ? 'alert' : 'status'}
-      style={{ '--toast-duration': `${toast.duration}ms` } as CSSProperties}
-    >
+    <article className="toast-item" data-tone={toast.tone} role={toast.tone === 'error' ? 'alert' : 'status'} style={{ '--toast-duration': `${toast.duration}ms` } as CSSProperties}>
       <span className="toast-icon" aria-hidden="true">
         <Icon size={20} />
       </span>

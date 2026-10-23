@@ -1,3 +1,5 @@
+import { ApiRequestError, requestFormData, requestJson } from '../../shared/api/client'
+
 export type ShippingOrderSummary = {
   id: string
   orderNumber: string
@@ -24,7 +26,6 @@ export type ShippingOrderDetail = ShippingOrderSummary & {
   proofAttachments: Array<{ id: string; fileName: string; mediaType: string; sizeBytes: number; createdAt: string }>
   deliveryIssues: Array<{ id: string; category: string; notes: string; reportedAt: string; resolvedAt: string | null }>
 }
-type ErrorBody = { error?: { code?: string; message?: string; fields?: string[] } }
 export class ShippingRequestError extends Error {
   readonly status: number
   readonly code: string
@@ -37,30 +38,15 @@ export class ShippingRequestError extends Error {
     this.fields = fields
   }
 }
-function apiBase() {
-  const value = import.meta.env.VITE_API_BASE_URL?.trim()
-  if (!value) throw new Error('The Flowline API URL is not configured.')
-  return value.replace(/\/$/, '')
-}
-async function parse<T>(response: Response) {
-  const body = (await response.json().catch(() => ({}))) as ErrorBody
-  if (!response.ok)
-    throw new ShippingRequestError(
-      response.status,
-      body.error?.code ?? 'REQUEST_FAILED',
-      body.error?.message ?? 'The Shipping request failed.',
-      body.error?.fields ?? [],
-    )
-  return body as T
-}
 async function request<T>(path: string, init?: RequestInit) {
-  return parse<T>(
-    await fetch(`${apiBase()}${path}`, {
-      credentials: 'include',
-      ...init,
-      headers: { ...(init?.body !== undefined ? { 'content-type': 'application/json' } : {}), ...init?.headers },
-    }),
-  )
+  try {
+    return await requestJson<T>(path, init)
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throw new ShippingRequestError(error.status, error.code, error.message || 'The Shipping request failed.', error.fields)
+    }
+    throw error
+  }
 }
 export async function listShippingOrders() {
   return (await request<{ orders: ShippingOrderSummary[] }>('/api/v1/shipping/orders')).orders
@@ -104,10 +90,5 @@ export function confirmShippingDelivery(orderId: string, input: { actualDelivery
 export async function uploadDeliveryProof(orderId: string, file: File) {
   const data = new FormData()
   data.append('file', file)
-  const response = await fetch(`${apiBase()}/api/v1/shipping/orders/${orderId}/proof`, {
-    method: 'POST',
-    credentials: 'include',
-    body: data,
-  })
-  return (await parse<{ order: ShippingOrderDetail }>(response)).order
+  return (await requestFormData<{ order: ShippingOrderDetail }>(`/api/v1/shipping/orders/${orderId}/proof`, data)).order
 }

@@ -1,7 +1,7 @@
 import type pg from 'pg'
 import { describe, expect, it, vi } from 'vitest'
-import type { AuthUser } from '../../backend/src/auth-service.js'
-import { PlanningError, PostgresPlanningService } from '../../backend/src/planning-service.js'
+import type { AuthUser } from '../../backend/src/auth/auth-service.js'
+import { PlanningError, PostgresPlanningService } from '../../backend/src/planning/planning-service.js'
 
 const planner: AuthUser = {
   id: 'planner-1',
@@ -57,14 +57,7 @@ describe('Planning service gates', () => {
     ).rejects.toEqual(
       expect.objectContaining<Partial<PlanningError>>({
         code: 'RELEASE_BLOCKED',
-        fields: expect.arrayContaining([
-          'materialStatus',
-          'productionLineId',
-          'plannedProductionDate',
-          'capacityStatus',
-          'readinessStatus',
-          'pressUserAuthUserId',
-        ]),
+        fields: expect.arrayContaining(['materialStatus', 'productionLineId', 'plannedProductionDate', 'capacityStatus', 'readinessStatus', 'pressUserAuthUserId']),
       }),
     )
     expect(pool.connect).not.toHaveBeenCalled()
@@ -73,9 +66,7 @@ describe('Planning service gates', () => {
   it('denies non-Planning users before querying assigned work', async () => {
     const { pool, service } = createService()
 
-    await expect(service.listQueue({ ...planner, roles: ['CSR'] })).rejects.toEqual(
-      expect.objectContaining<Partial<PlanningError>>({ code: 'FORBIDDEN', statusCode: 403 }),
-    )
+    await expect(service.listQueue({ ...planner, roles: ['CSR'] })).rejects.toEqual(expect.objectContaining<Partial<PlanningError>>({ code: 'FORBIDDEN', statusCode: 403 }))
     expect(pool.query).not.toHaveBeenCalled()
   })
 })

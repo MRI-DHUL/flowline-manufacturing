@@ -1,3 +1,5 @@
+import { ApiRequestError, requestJson } from '../../shared/api/client'
+
 export type DashboardNotification = {
   id: string
   orderId: string | null
@@ -13,10 +15,6 @@ type NotificationResponse = {
   notifications: DashboardNotification[]
 }
 
-type NotificationErrorBody = {
-  error?: { code?: string; message?: string }
-}
-
 export class NotificationRequestError extends Error {
   readonly status: number
   readonly code: string
@@ -29,50 +27,34 @@ export class NotificationRequestError extends Error {
   }
 }
 
-function getApiBaseUrl() {
-  const value = import.meta.env.VITE_API_BASE_URL?.trim()
-  if (!value) throw new Error('The Flowline API URL is not configured.')
-  return value.replace(/\/$/, '')
-}
-
-async function parseResponse<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => ({}))) as NotificationErrorBody
-  if (!response.ok) {
-    throw new NotificationRequestError(
-      response.status,
-      body.error?.code ?? 'REQUEST_FAILED',
-      body.error?.message ?? 'The notification request failed.',
-    )
+async function notificationRequest<T>(path: string, init?: RequestInit) {
+  try {
+    return await requestJson<T>(path, init)
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throw new NotificationRequestError(error.status, error.code, error.message || 'The notification request failed.')
+    }
+    throw error
   }
-  return body as T
 }
 
 export async function listNotifications() {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/notifications`, {
-    credentials: 'include',
-  })
-  const result = await parseResponse<NotificationResponse>(response)
+  const result = await notificationRequest<NotificationResponse>('/api/v1/notifications')
   return result.notifications
 }
 
 export async function markNotificationRead(notificationId: string) {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/notifications/${notificationId}/read`, {
-    method: 'POST',
-    credentials: 'include',
-  })
-  await parseResponse<{ ok: true }>(response)
+  await notificationRequest<{ ok: true }>(`/api/v1/notifications/${notificationId}/read`, { method: 'POST' })
 }
 
 export async function deleteNotification(notificationId: string) {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/notifications/${notificationId}`, {
-    method: 'DELETE',
-    credentials: 'include',
-  })
-  await parseResponse<{ ok: true }>(response)
+  await notificationRequest<{ ok: true }>(`/api/v1/notifications/${notificationId}`, { method: 'DELETE' })
 }
 
 export function openNotificationStream(onNotification: (notification: DashboardNotification) => void, onDisconnect: () => void) {
-  const websocketUrl = getApiBaseUrl().replace(/^http/, 'ws')
+  const apiUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+  if (!apiUrl) throw new Error('The Flowline API URL is not configured.')
+  const websocketUrl = apiUrl.replace(/\/$/, '').replace(/^http/, 'ws')
   const socket = new WebSocket(`${websocketUrl}/api/v1/notifications/live`)
   let disconnected = false
   const handleDisconnect = () => {

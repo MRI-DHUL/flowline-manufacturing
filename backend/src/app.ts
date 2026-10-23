@@ -2,35 +2,37 @@ import cors from '@fastify/cors'
 import cookie from '@fastify/cookie'
 import multipart from '@fastify/multipart'
 import websocket from '@fastify/websocket'
+import rateLimit from '@fastify/rate-limit'
+import helmet from '@fastify/helmet'
 import Fastify from 'fastify'
 import type { FastifyServerOptions } from 'fastify'
-import { registerAuthRoutes } from './auth-routes.js'
-import type { AuthService } from './auth-service.js'
-import { registerDashboardRoutes } from './dashboard-routes.js'
-import type { DashboardService } from './dashboard-service.js'
-import { registerCsrRoutes } from './csr-routes.js'
-import type { CsrService } from './csr-service.js'
+import { registerAuthRoutes } from './auth/auth-routes.js'
+import type { AuthService } from './auth/auth-service.js'
+import { registerDashboardRoutes } from './dashboard/dashboard-routes.js'
+import type { DashboardService } from './dashboard/dashboard-service.js'
+import { registerCsrRoutes } from './csr/csr-routes.js'
+import type { CsrService } from './csr/csr-service.js'
 import type { DatabaseHealth } from './database.js'
-import { registerNotificationRoutes } from './notification-routes.js'
-import type { NotificationHub, NotificationService } from './notification-service.js'
-import { registerRdRoutes } from './rd-routes.js'
-import type { RdService } from './rd-service.js'
-import { registerPlanningRoutes } from './planning-routes.js'
-import type { PlanningService } from './planning-service.js'
-import { registerIssueRoutes } from './issue-routes.js'
-import type { IssueService } from './issue-service.js'
-import { registerPressRoutes } from './press-routes.js'
-import type { PressService } from './press-service.js'
-import { registerShippingRoutes } from './shipping-routes.js'
-import type { ShippingService } from './shipping-service.js'
-import { registerHoldRoutes } from './hold-routes.js'
-import type { HoldService } from './hold-service.js'
-import { registerManagerRoutes } from './manager-routes.js'
-import type { ManagerService } from './manager-service.js'
-import { registerAdminRoutes } from './admin-routes.js'
-import type { AdminService } from './admin-service.js'
-import { registerActivityRoutes } from './activity-routes.js'
-import type { PostgresActivityService } from './activity-service.js'
+import { registerNotificationRoutes } from './notifications/notification-routes.js'
+import type { NotificationHub, NotificationService } from './notifications/notification-service.js'
+import { registerRdRoutes } from './rd/rd-routes.js'
+import type { RdService } from './rd/rd-service.js'
+import { registerPlanningRoutes } from './planning/planning-routes.js'
+import type { PlanningService } from './planning/planning-service.js'
+import { registerIssueRoutes } from './issues/issue-routes.js'
+import type { IssueService } from './issues/issue-service.js'
+import { registerPressRoutes } from './press/press-routes.js'
+import type { PressService } from './press/press-service.js'
+import { registerShippingRoutes } from './shipping/shipping-routes.js'
+import type { ShippingService } from './shipping/shipping-service.js'
+import { registerHoldRoutes } from './holds/hold-routes.js'
+import type { HoldService } from './holds/hold-service.js'
+import { registerManagerRoutes } from './manager/manager-routes.js'
+import type { ManagerService } from './manager/manager-service.js'
+import { registerAdminRoutes } from './admin/admin-routes.js'
+import type { AdminService } from './admin/admin-service.js'
+import { registerActivityRoutes } from './activity/activity-routes.js'
+import type { PostgresActivityService } from './activity/activity-service.js'
 
 type BuildAppOptions = {
   frontendOrigin: string
@@ -56,8 +58,17 @@ type BuildAppOptions = {
 export function buildApp(options: BuildAppOptions) {
   const app = Fastify({ logger: options.logger ?? false })
 
+  app.register(rateLimit, { global: false })
+  app.register(helmet)
+  app.addHook('onSend', async (request, reply) => {
+    reply.header('x-request-id', request.id)
+  })
+
+  const localOrigins = /^(https?:\/\/)(127\.0\.0\.1|localhost)(:\d+)?$/.test(options.frontendOrigin)
+    ? [options.frontendOrigin, 'http://127.0.0.1:5174']
+    : options.frontendOrigin
   app.register(cors, {
-    origin: [options.frontendOrigin, 'http://127.0.0.1:5174'],
+    origin: localOrigins,
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   })

@@ -37,9 +37,7 @@ async function main() {
     await ensureMigrationTable(client)
 
     const migrations = await loadMigrations()
-    const appliedResult = await client.query<AppliedMigration>(
-      'SELECT name, checksum, applied_at FROM flowline.schema_migrations ORDER BY name',
-    )
+    const appliedResult = await client.query<AppliedMigration>('SELECT name, checksum, applied_at FROM flowline.schema_migrations ORDER BY name')
     const applied = new Map(appliedResult.rows.map((row) => [row.name, row]))
 
     for (const migration of migrations) {

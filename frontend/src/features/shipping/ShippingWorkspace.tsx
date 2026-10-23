@@ -25,17 +25,7 @@ function format(value: string | null) {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? 'Not set' : fmt.format(date)
 }
-function ShippingDetail({
-  order,
-  managerUsers,
-  onUpdated,
-  onDelivered,
-}: {
-  order: ShippingOrderDetail
-  managerUsers: ManagerUser[]
-  onUpdated: (order: ShippingOrderDetail) => void
-  onDelivered: (id: string) => void
-}) {
+function ShippingDetail({ order, managerUsers, onUpdated, onDelivered }: { order: ShippingOrderDetail; managerUsers: ManagerUser[]; onUpdated: (order: ShippingOrderDetail) => void; onDelivered: (id: string) => void }) {
   const { showToast } = useToast()
   const [busy, setBusy] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
@@ -81,11 +71,7 @@ function ShippingDetail({
           <ReportIssueButton orderId={order.id} orderNumber={order.orderNumber} />
           <HoldControls orderId={order.id} orderNumber={order.orderNumber} status={order.status} stage="Shipping" defaultTeam="SHIPPING" />
           {ready ? (
-            <Button
-              variant="primary"
-              disabled={busy}
-              onClick={() => void execute('Readiness not verified', () => verifyShippingReady(order.id), 'Dispatch readiness verified')}
-            >
+            <Button variant="primary" disabled={busy} onClick={() => void execute('Readiness not verified', () => verifyShippingReady(order.id), 'Dispatch readiness verified')}>
               <CheckCircle2 size={16} />
               Verify readiness
             </Button>
@@ -130,40 +116,19 @@ function ShippingDetail({
             </header>
             <div className="shipping-grid">
               <FormField label="Carrier" required>
-                <TextInput
-                  value={dispatch.carrier}
-                  onChange={(e) => setDispatch((v) => ({ ...v, carrier: e.target.value }))}
-                  aria-invalid={errors.includes('carrier')}
-                />
+                <TextInput value={dispatch.carrier} onChange={(e) => setDispatch((v) => ({ ...v, carrier: e.target.value }))} aria-invalid={errors.includes('carrier')} />
               </FormField>
               <FormField label="Tracking / vehicle number" required>
-                <TextInput
-                  value={dispatch.trackingOrVehicleNumber}
-                  onChange={(e) => setDispatch((v) => ({ ...v, trackingOrVehicleNumber: e.target.value }))}
-                  aria-invalid={errors.includes('trackingOrVehicleNumber')}
-                />
+                <TextInput value={dispatch.trackingOrVehicleNumber} onChange={(e) => setDispatch((v) => ({ ...v, trackingOrVehicleNumber: e.target.value }))} aria-invalid={errors.includes('trackingOrVehicleNumber')} />
               </FormField>
               <FormField label="Dispatch date and time" required>
-                <TextInput
-                  type="datetime-local"
-                  value={dispatch.dispatchAt}
-                  onChange={(e) => setDispatch((v) => ({ ...v, dispatchAt: e.target.value }))}
-                />
+                <TextInput type="datetime-local" value={dispatch.dispatchAt} onChange={(e) => setDispatch((v) => ({ ...v, dispatchAt: e.target.value }))} />
               </FormField>
               <FormField label="Expected delivery" required>
-                <TextInput
-                  type="datetime-local"
-                  value={dispatch.expectedDeliveryAt}
-                  onChange={(e) => setDispatch((v) => ({ ...v, expectedDeliveryAt: e.target.value }))}
-                />
+                <TextInput type="datetime-local" value={dispatch.expectedDeliveryAt} onChange={(e) => setDispatch((v) => ({ ...v, expectedDeliveryAt: e.target.value }))} />
               </FormField>
               <FormField label="Shipped quantity" required>
-                <TextInput
-                  type="number"
-                  min="0"
-                  value={dispatch.shippedQuantity}
-                  onChange={(e) => setDispatch((v) => ({ ...v, shippedQuantity: e.target.value }))}
-                />
+                <TextInput type="number" min="0" value={dispatch.shippedQuantity} onChange={(e) => setDispatch((v) => ({ ...v, shippedQuantity: e.target.value }))} />
               </FormField>
               <FormField label="Destination" required>
                 <TextInput value={dispatch.destination} onChange={(e) => setDispatch((v) => ({ ...v, destination: e.target.value }))} />
@@ -230,11 +195,7 @@ function ShippingDetail({
               )}
               <div className="shipping-grid">
                 <FormField label="Actual delivery date and time" required>
-                  <TextInput
-                    type="datetime-local"
-                    value={delivery.actualDeliveryAt}
-                    onChange={(e) => setDelivery((v) => ({ ...v, actualDeliveryAt: e.target.value }))}
-                  />
+                  <TextInput type="datetime-local" value={delivery.actualDeliveryAt} onChange={(e) => setDelivery((v) => ({ ...v, actualDeliveryAt: e.target.value }))} />
                 </FormField>
                 <FormField label="Received by" required>
                   <TextInput value={delivery.receivedBy} onChange={(e) => setDelivery((v) => ({ ...v, receivedBy: e.target.value }))} />
@@ -281,10 +242,7 @@ function ShippingDetail({
               </header>
               <div className="shipping-grid">
                 <FormField label="Manager" required>
-                  <Select
-                    value={issue.managerUserAuthUserId}
-                    onChange={(e) => setIssue((v) => ({ ...v, managerUserAuthUserId: e.target.value }))}
-                  >
+                  <Select value={issue.managerUserAuthUserId} onChange={(e) => setIssue((v) => ({ ...v, managerUserAuthUserId: e.target.value }))}>
                     <option value="">Select Manager</option>
                     {managerUsers.map((user) => (
                       <option key={user.authUserId} value={user.authUserId}>
@@ -297,19 +255,11 @@ function ShippingDetail({
                   <TextInput value={issue.category} onChange={(e) => setIssue((v) => ({ ...v, category: e.target.value }))} />
                 </FormField>
                 <FormField label="Escalation details" required className="wide">
-                  <TextArea
-                    value={issue.notes}
-                    onChange={(e) => setIssue((v) => ({ ...v, notes: e.target.value }))}
-                    placeholder="Describe the delivery risk, customer impact, and action needed."
-                  />
+                  <TextArea value={issue.notes} onChange={(e) => setIssue((v) => ({ ...v, notes: e.target.value }))} placeholder="Describe the delivery risk, customer impact, and action needed." />
                 </FormField>
               </div>
               <footer>
-                <Button
-                  variant="danger"
-                  disabled={busy || !issue.managerUserAuthUserId}
-                  onClick={() => void execute('Escalation not sent', () => reportDeliveryIssue(order.id, issue), 'Escalated to Manager')}
-                >
+                <Button variant="danger" disabled={busy || !issue.managerUserAuthUserId} onClick={() => void execute('Escalation not sent', () => reportDeliveryIssue(order.id, issue), 'Escalated to Manager')}>
                   <CircleAlert size={16} />
                   Send to Manager
                 </Button>
@@ -354,8 +304,7 @@ export function ShippingWorkspace() {
         if (!items.length) setDetailLoading(false)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'Shipping queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Shipping queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -372,8 +321,7 @@ export function ShippingWorkspace() {
         if (!cancelled) setDetail(item)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'Shipment unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Shipment unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setDetailLoading(false)
@@ -382,9 +330,7 @@ export function ShippingWorkspace() {
       cancelled = true
     }
   }, [selected, showToast])
-  const visible = orders.filter((order) =>
-    `${order.orderNumber} ${order.customerName ?? ''} ${order.productName ?? ''}`.toLowerCase().includes(deferred),
-  )
+  const visible = orders.filter((order) => `${order.orderNumber} ${order.customerName ?? ''} ${order.productName ?? ''}`.toLowerCase().includes(deferred))
   function remove(id: string) {
     const remaining = orders.filter((o) => o.id !== id)
     setOrders(remaining)

@@ -1,3 +1,5 @@
+import { ApiRequestError, requestJson } from '../../shared/api/client'
+
 export type ReportedOrderIssue = {
   id: string
   orderId: string
@@ -7,8 +9,6 @@ export type ReportedOrderIssue = {
   reportedAt: string
   recipientCount: number
 }
-
-type ErrorBody = { error?: { code?: string; message?: string } }
 
 export class IssueRequestError extends Error {
   readonly status: number
@@ -22,26 +22,18 @@ export class IssueRequestError extends Error {
   }
 }
 
-function apiBase() {
-  const value = import.meta.env.VITE_API_BASE_URL?.trim()
-  if (!value) throw new Error('The Flowline API URL is not configured.')
-  return value.replace(/\/$/, '')
-}
-
 export async function reportOrderIssue(orderId: string, message: string) {
-  const response = await fetch(`${apiBase()}/api/v1/orders/${orderId}/issues`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ message }),
-  })
-  const body = (await response.json().catch(() => ({}))) as ErrorBody & { issue?: ReportedOrderIssue }
-  if (!response.ok || !body.issue) {
-    throw new IssueRequestError(
-      response.status,
-      body.error?.code ?? 'REQUEST_FAILED',
-      body.error?.message ?? 'The issue could not be reported.',
-    )
+  try {
+    const body = await requestJson<{ issue?: ReportedOrderIssue }>(`/api/v1/orders/${orderId}/issues`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    })
+    if (!body.issue) throw new IssueRequestError(200, 'REQUEST_FAILED', 'The issue could not be reported.')
+    return body.issue
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throw new IssueRequestError(error.status, error.code, error.message || 'The issue could not be reported.')
+    }
+    throw error
   }
-  return body.issue
 }

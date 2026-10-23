@@ -22,22 +22,9 @@ export function AuthField({ id, label, error, hint, type = 'text', ...inputProps
         {hint && !error ? <span id={`${id}-hint`}>{hint}</span> : null}
       </div>
       <div className="input-shell" data-invalid={Boolean(error)}>
-        <TextInput
-          {...inputProps}
-          id={id}
-          type={isPassword && passwordVisible ? 'text' : type}
-          aria-invalid={Boolean(error)}
-          aria-describedby={descriptionId}
-        />
+        <TextInput {...inputProps} id={id} type={isPassword && passwordVisible ? 'text' : type} aria-invalid={Boolean(error)} aria-describedby={descriptionId} />
         {isPassword ? (
-          <Button
-            className="visibility-button"
-            variant="quiet"
-            size="sm"
-            type="button"
-            onClick={() => setPasswordVisible((visible) => !visible)}
-            aria-label={passwordVisible ? 'Hide password' : 'Show password'}
-          >
+          <Button className="visibility-button" variant="quiet" size="sm" type="button" onClick={() => setPasswordVisible((visible) => !visible)} aria-label={passwordVisible ? 'Hide password' : 'Show password'}>
             {passwordVisible ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}
           </Button>
         ) : null}

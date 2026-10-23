@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { LoadingScreen } from './components/loading/LoadingScreen'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
+import { ProtectedRoute } from './features/auth/ProtectedRoute'
 
 const WorkflowDashboardPage = lazy(() =>
   import('./features/dashboard/WorkflowDashboardPage').then((module) => ({
@@ -19,7 +20,9 @@ function App() {
         path="/dashboard/*"
         element={
           <Suspense fallback={<LoadingScreen />}>
-            <WorkflowDashboardPage />
+            <ProtectedRoute>
+              <WorkflowDashboardPage />
+            </ProtectedRoute>
           </Suspense>
         }
       />

@@ -2,17 +2,7 @@ import { ArrowLeft, Save, Send, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useToast } from '../../components/toast/useToast'
 import { Button, DatePicker, FileUpload, FormField, Select, TextArea, TextInput } from '../../components/ui'
-import {
-  assignCsrRdReviewer,
-  createCsrDraft,
-  listRdReviewers,
-  CsrRequestError,
-  deleteCsrAttachment,
-  downloadCsrAttachment,
-  submitCsrOrder,
-  updateCsrDraft,
-  uploadCsrAttachment,
-} from './csr-order-service'
+import { assignCsrRdReviewer, createCsrDraft, listRdReviewers, CsrRequestError, deleteCsrAttachment, downloadCsrAttachment, submitCsrOrder, updateCsrDraft, uploadCsrAttachment } from './csr-order-service'
 import type { CsrOrderDetail, CsrReviewer, OrderPatch } from './csr-order-service'
 
 type FormValues = {
@@ -32,15 +22,7 @@ type FormValues = {
   assignedReviewerAuthUserId: string
 }
 
-const requiredFields = [
-  'customerName',
-  'productName',
-  'packagingType',
-  'material',
-  'requestedQuantity',
-  'requestedDeliveryDate',
-  'assignedReviewerAuthUserId',
-] as const
+const requiredFields = ['customerName', 'productName', 'packagingType', 'material', 'requestedQuantity', 'requestedDeliveryDate', 'assignedReviewerAuthUserId'] as const
 
 function initialValues(order?: CsrOrderDetail | null): FormValues {
   return {
@@ -70,15 +52,7 @@ function toPatch(values: FormValues): OrderPatch {
   }
 }
 
-export function CsrOrderForm({
-  order,
-  onComplete,
-  onCancel,
-}: {
-  order?: CsrOrderDetail | null
-  onComplete: (order: CsrOrderDetail) => void
-  onCancel: () => void
-}) {
+export function CsrOrderForm({ order, onComplete, onCancel }: { order?: CsrOrderDetail | null; onComplete: (order: CsrOrderDetail) => void; onCancel: () => void }) {
   const { showToast } = useToast()
   const [values, setValues] = useState(() => initialValues(order))
   const [files, setFiles] = useState<File[]>([])
@@ -243,12 +217,7 @@ export function CsrOrderForm({
           <legend>Quantity and delivery</legend>
           <div className="csr-form-grid">
             <FormField label="Requested quantity" required className={fieldClass('requestedQuantity')}>
-              <TextInput
-                type="number"
-                min="1"
-                value={values.requestedQuantity}
-                onChange={(event) => update('requestedQuantity', event.target.value)}
-              />
+              <TextInput type="number" min="1" value={values.requestedQuantity} onChange={(event) => update('requestedQuantity', event.target.value)} />
             </FormField>
             <FormField label="Requested delivery date" required className={fieldClass('requestedDeliveryDate')}>
               <DatePicker value={values.requestedDeliveryDate} onChange={(event) => update('requestedDeliveryDate', event.target.value)} />
@@ -282,23 +251,12 @@ export function CsrOrderForm({
             <ul className="csr-file-list existing">
               {currentOrder.attachments.map((attachment) => (
                 <li key={attachment.id}>
-                  <Button
-                    variant="quiet"
-                    size="sm"
-                    type="button"
-                    onClick={() => void downloadCsrAttachment(currentOrder.id, attachment.id, attachment.fileName)}
-                  >
+                  <Button variant="quiet" size="sm" type="button" onClick={() => void downloadCsrAttachment(currentOrder.id, attachment.id, attachment.fileName)}>
                     {attachment.fileName}
                   </Button>
                   <small>{Math.ceil(attachment.sizeBytes / 1024)} KB</small>
                   {currentOrder.status === 'Draft' ? (
-                    <Button
-                      variant="quiet"
-                      size="sm"
-                      type="button"
-                      aria-label={`Remove ${attachment.fileName}`}
-                      onClick={() => void removeAttachment(attachment.id)}
-                    >
+                    <Button variant="quiet" size="sm" type="button" aria-label={`Remove ${attachment.fileName}`} onClick={() => void removeAttachment(attachment.id)}>
                       <Trash2 size={16} />
                     </Button>
                   ) : null}
@@ -311,16 +269,8 @@ export function CsrOrderForm({
         <fieldset disabled={busy}>
           <legend>R&amp;D assignment</legend>
           <div className="csr-form-grid">
-            <FormField
-              label="R&D reviewer"
-              required
-              className={fieldClass('assignedReviewerAuthUserId')}
-              hint={!reviewers.length ? 'No active R&D reviewers are available.' : undefined}
-            >
-              <Select
-                value={values.assignedReviewerAuthUserId}
-                onChange={(event) => update('assignedReviewerAuthUserId', event.target.value)}
-              >
+            <FormField label="R&D reviewer" required className={fieldClass('assignedReviewerAuthUserId')} hint={!reviewers.length ? 'No active R&D reviewers are available.' : undefined}>
+              <Select value={values.assignedReviewerAuthUserId} onChange={(event) => update('assignedReviewerAuthUserId', event.target.value)}>
                 <option value="">Select an active R&amp;D reviewer</option>
                 {reviewers.map((reviewer) => (
                   <option key={reviewer.authUserId} value={reviewer.authUserId}>

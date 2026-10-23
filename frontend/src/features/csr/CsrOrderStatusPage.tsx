@@ -61,8 +61,7 @@ export function CsrOrderStatusPage() {
         setSelectedOrderId(items[0]?.orderId ?? null)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'Order status unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Order status unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -74,10 +73,7 @@ export function CsrOrderStatusPage() {
 
   const orderHistory = new Map<string, CsrOrderStatusRow[]>()
   for (const row of rows) orderHistory.set(row.orderId, [...(orderHistory.get(row.orderId) ?? []), row])
-  const statuses = [
-    'All',
-    ...new Set([...orderHistory.values()].map((history) => history[0]?.currentStatus).filter((item): item is string => Boolean(item))),
-  ]
+  const statuses = ['All', ...new Set([...orderHistory.values()].map((history) => history[0]?.currentStatus).filter((item): item is string => Boolean(item)))]
   const visibleOrderHistory = new Map(
     [...orderHistory].filter(([, history]) => {
       const currentStatus = history[0]?.currentStatus
@@ -136,12 +132,7 @@ export function CsrOrderStatusPage() {
         <div className="csr-order-status-filters">
           <label>
             <span>Search order history</span>
-            <TextInput
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Order, product, completed by"
-            />
+            <TextInput type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Order, product, completed by" />
           </label>
           <label>
             <span>Status</span>

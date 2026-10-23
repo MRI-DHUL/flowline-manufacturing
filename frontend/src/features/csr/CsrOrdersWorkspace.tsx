@@ -37,15 +37,7 @@ function statusTone(status: string) {
   return 'neutral'
 }
 
-function OrderDetails({
-  order,
-  onEdit,
-  onUpdated,
-}: {
-  order: CsrOrderDetail
-  onEdit: () => void
-  onUpdated: (order: CsrOrderDetail) => void
-}) {
+function OrderDetails({ order, onEdit, onUpdated }: { order: CsrOrderDetail; onEdit: () => void; onUpdated: (order: CsrOrderDetail) => void }) {
   const { showToast } = useToast()
   const [tab, setTab] = useState<'overview' | 'activity'>('overview')
   const [response, setResponse] = useState('')
@@ -194,11 +186,7 @@ function OrderDetails({
                       <strong>{attachment.fileName}</strong>
                       <small>{Math.ceil(attachment.sizeBytes / 1024)} KB</small>
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => void downloadCsrAttachment(order.id, attachment.id, attachment.fileName)}
-                      aria-label={`Download ${attachment.fileName}`}
-                    >
+                    <button type="button" onClick={() => void downloadCsrAttachment(order.id, attachment.id, attachment.fileName)} aria-label={`Download ${attachment.fileName}`}>
                       <Download size={17} />
                     </button>
                   </li>
@@ -236,15 +224,7 @@ function OrderDetails({
   )
 }
 
-export function CsrOrdersWorkspace({
-  mode,
-  orderId,
-  onBackToOrders,
-}: {
-  mode: 'list' | 'new' | 'edit'
-  orderId: string | null
-  onBackToOrders: () => void
-}) {
+export function CsrOrdersWorkspace({ mode, orderId, onBackToOrders }: { mode: 'list' | 'new' | 'edit'; orderId: string | null; onBackToOrders: () => void }) {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const [orders, setOrders] = useState<CsrOrderSummary[]>([])
@@ -268,8 +248,7 @@ export function CsrOrdersWorkspace({
         setSelectedId((current) => current ?? items[0]?.id ?? null)
       })
       .catch((error: unknown) => {
-        if (!cancelled)
-          showToast({ title: 'Orders could not be loaded', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Orders could not be loaded', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -287,8 +266,7 @@ export function CsrOrdersWorkspace({
         if (!cancelled) setDetail(order)
       })
       .catch((error: unknown) => {
-        if (!cancelled)
-          showToast({ title: 'Order details unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Order details unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
     return () => {
       cancelled = true
@@ -344,12 +322,7 @@ export function CsrOrdersWorkspace({
             <span>Search orders</span>
             <div>
               <Search size={16} />
-              <TextInput
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Order, customer, product"
-              />
+              <TextInput type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Order, customer, product" />
             </div>
           </label>
           <label>
@@ -368,11 +341,7 @@ export function CsrOrdersWorkspace({
                 <span className="workflow-status" data-tone={statusTone(order.status)}>
                   {order.status}
                 </span>
-                {order.openClarifications ? (
-                  <small>{order.openClarifications} clarification</small>
-                ) : (
-                  <small>{order.priority ?? 'Normal'} priority</small>
-                )}
+                {order.openClarifications ? <small>{order.openClarifications} clarification</small> : <small>{order.priority ?? 'Normal'} priority</small>}
               </div>
               <strong>{order.productName ?? 'Product not set'}</strong>
               <p>

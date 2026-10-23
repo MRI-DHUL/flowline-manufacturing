@@ -30,7 +30,7 @@ describe('dashboard service', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(getDashboard()).resolves.toEqual(responseBody)
-    expect(fetchMock).toHaveBeenCalledWith('https://api.example/api/v1/dashboard', { credentials: 'include' })
+    expect(fetchMock).toHaveBeenCalledWith('https://api.example/api/v1/dashboard', expect.objectContaining({ credentials: 'include', signal: expect.any(AbortSignal) }))
   })
 
   it('preserves controlled access-pending errors', async () => {

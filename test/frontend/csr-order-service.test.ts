@@ -1,13 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  assignCsrRdReviewer,
-  createCsrDraft,
-  listRdReviewers,
-  CsrRequestError,
-  listCsrOrders,
-  submitCsrOrder,
-  uploadCsrAttachment,
-} from '../../frontend/src/features/csr/csr-order-service'
+import { assignCsrRdReviewer, createCsrDraft, listRdReviewers, CsrRequestError, listCsrOrders, submitCsrOrder, uploadCsrAttachment } from '../../frontend/src/features/csr/csr-order-service'
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -32,10 +24,7 @@ describe('CSR order service', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(listCsrOrders({ search: 'pouch', status: 'Draft' })).resolves.toEqual([order])
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.example/api/v1/orders?search=pouch&status=Draft',
-      expect.objectContaining({ credentials: 'include' }),
-    )
+    expect(fetchMock).toHaveBeenCalledWith('https://api.example/api/v1/orders?search=pouch&status=Draft', expect.objectContaining({ credentials: 'include' }))
   })
 
   it('creates an incomplete draft through JSON', async () => {
@@ -49,10 +38,7 @@ describe('CSR order service', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(createCsrDraft({ customerName: null })).resolves.toEqual(order)
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.example/api/v1/orders',
-      expect.objectContaining({ method: 'POST', body: JSON.stringify({ customerName: null }) }),
-    )
+    expect(fetchMock).toHaveBeenCalledWith('https://api.example/api/v1/orders', expect.objectContaining({ method: 'POST', body: JSON.stringify({ customerName: null }) }))
   })
 
   it('preserves submission field errors', async () => {

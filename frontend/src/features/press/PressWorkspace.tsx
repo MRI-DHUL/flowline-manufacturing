@@ -40,17 +40,7 @@ function formatDateTime(value: string | null) {
   return Number.isNaN(date.getTime()) ? 'Not set' : dateTimeFormatter.format(date)
 }
 
-function PressDetail({
-  order,
-  shippingUsers,
-  onUpdated,
-  onCompleted,
-}: {
-  order: PressOrderDetail
-  shippingUsers: ShippingUser[]
-  onUpdated: (order: PressOrderDetail) => void
-  onCompleted: (orderId: string) => void
-}) {
+function PressDetail({ order, shippingUsers, onUpdated, onCompleted }: { order: PressOrderDetail; shippingUsers: ShippingUser[]; onUpdated: (order: PressOrderDetail) => void; onCompleted: (orderId: string) => void }) {
   const { showToast } = useToast()
   const [busy, setBusy] = useState(false)
   const [pauseReason, setPauseReason] = useState('')
@@ -62,12 +52,7 @@ function PressDetail({
   async function runAction(action: 'accept' | 'start' | 'pause') {
     setBusy(true)
     try {
-      const updated =
-        action === 'accept'
-          ? await acceptPressOrder(order.id)
-          : action === 'start'
-            ? await startPressOrder(order.id)
-            : await pausePressOrder(order.id, pauseReason)
+      const updated = action === 'accept' ? await acceptPressOrder(order.id) : action === 'start' ? await startPressOrder(order.id) : await pausePressOrder(order.id, pauseReason)
       onUpdated(updated)
       if (action === 'pause') setPauseReason('')
       showToast({
@@ -226,12 +211,7 @@ function PressDetail({
               </div>
             </header>
             <div className="press-inline-action">
-              <TextInput
-                value={pauseReason}
-                onChange={(event) => setPauseReason(event.target.value)}
-                placeholder="Pause reason"
-                aria-invalid={fieldErrors.includes('reason')}
-              />
+              <TextInput value={pauseReason} onChange={(event) => setPauseReason(event.target.value)} placeholder="Pause reason" aria-invalid={fieldErrors.includes('reason')} />
               <Button type="button" disabled={busy || pauseReason.trim().length < 5} onClick={() => void runAction('pause')}>
                 <Pause size={16} />
                 Pause
@@ -251,24 +231,13 @@ function PressDetail({
             </header>
             <div className="press-form-grid">
               <FormField label="Issue category" required>
-                <TextInput
-                  value={issue.category}
-                  onChange={(event) => setIssue((current) => ({ ...current, category: event.target.value }))}
-                  aria-invalid={fieldErrors.includes('category')}
-                />
+                <TextInput value={issue.category} onChange={(event) => setIssue((current) => ({ ...current, category: event.target.value }))} aria-invalid={fieldErrors.includes('category')} />
               </FormField>
               <FormField label="Corrective action">
-                <TextInput
-                  value={issue.correctiveAction}
-                  onChange={(event) => setIssue((current) => ({ ...current, correctiveAction: event.target.value }))}
-                />
+                <TextInput value={issue.correctiveAction} onChange={(event) => setIssue((current) => ({ ...current, correctiveAction: event.target.value }))} />
               </FormField>
               <FormField label="Issue notes" required className="wide">
-                <TextArea
-                  value={issue.notes}
-                  onChange={(event) => setIssue((current) => ({ ...current, notes: event.target.value }))}
-                  aria-invalid={fieldErrors.includes('notes')}
-                />
+                <TextArea value={issue.notes} onChange={(event) => setIssue((current) => ({ ...current, notes: event.target.value }))} aria-invalid={fieldErrors.includes('notes')} />
               </FormField>
             </div>
             <footer>
@@ -290,11 +259,7 @@ function PressDetail({
                   <time>{formatDateTime(item.reportedAt)}</time>
                   <p>{item.notes}</p>
                   {item.correctiveAction ? <small>Corrective action: {item.correctiveAction}</small> : null}
-                  <small>
-                    {item.status === 'OPEN'
-                      ? 'Open rework case'
-                      : `Outcome: ${item.status.toLowerCase()} · ${formatDateTime(item.resolvedAt)}`}
-                  </small>
+                  <small>{item.status === 'OPEN' ? 'Open rework case' : `Outcome: ${item.status.toLowerCase()} · ${formatDateTime(item.resolvedAt)}`}</small>
                 </li>
               ))}
             </ol>
@@ -312,29 +277,17 @@ function PressDetail({
             </header>
             <div className="press-form-grid">
               <FormField label="Outcome" required>
-                <Select
-                  value={rework.action}
-                  onChange={(event) => setRework((current) => ({ ...current, action: event.target.value as typeof current.action }))}
-                >
+                <Select value={rework.action} onChange={(event) => setRework((current) => ({ ...current, action: event.target.value as typeof current.action }))}>
                   <option value="RESUME">Resume production</option>
                   <option value="REVIEW">Return for Press review</option>
                 </Select>
               </FormField>
               <FormField label="Resolution evidence" required className="wide">
-                <TextArea
-                  value={rework.resolution}
-                  onChange={(event) => setRework((current) => ({ ...current, resolution: event.target.value }))}
-                  placeholder="Describe what was corrected and how it was verified."
-                />
+                <TextArea value={rework.resolution} onChange={(event) => setRework((current) => ({ ...current, resolution: event.target.value }))} placeholder="Describe what was corrected and how it was verified." />
               </FormField>
             </div>
             <footer>
-              <Button
-                variant="primary"
-                type="button"
-                disabled={busy || rework.resolution.trim().length < 10}
-                onClick={() => void resolveRework()}
-              >
+              <Button variant="primary" type="button" disabled={busy || rework.resolution.trim().length < 10} onClick={() => void resolveRework()}>
                 <RefreshCw size={16} />
                 Record rework outcome
               </Button>
@@ -358,12 +311,7 @@ function PressDetail({
               </div>
             ) : null}
             <div className="press-form-grid">
-              <FormField
-                label="Assign to Shipping user on completion"
-                required
-                className="wide"
-                hint="The completed order is sent only to this active Shipping user."
-              >
+              <FormField label="Assign to Shipping user on completion" required className="wide" hint="The completed order is sent only to this active Shipping user.">
                 <Select
                   value={completion.shippingUserAuthUserId}
                   onChange={(event) => setCompletion((current) => ({ ...current, shippingUserAuthUserId: event.target.value }))}
@@ -398,10 +346,7 @@ function PressDetail({
                 />
               </FormField>
               <FormField label="Completion notes" className="wide">
-                <TextArea
-                  value={completion.notes}
-                  onChange={(event) => setCompletion((current) => ({ ...current, notes: event.target.value }))}
-                />
+                <TextArea value={completion.notes} onChange={(event) => setCompletion((current) => ({ ...current, notes: event.target.value }))} />
               </FormField>
             </div>
             <footer>
@@ -439,8 +384,7 @@ export function PressWorkspace() {
         if (!nextOrders.length) setDetailLoading(false)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'Press queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Press queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -458,8 +402,7 @@ export function PressWorkspace() {
         if (!cancelled) setDetail(item)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'Press job unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Press job unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setDetailLoading(false)
@@ -469,9 +412,7 @@ export function PressWorkspace() {
     }
   }, [selectedId, showToast])
 
-  const visible = orders.filter((order) =>
-    `${order.orderNumber} ${order.customerName ?? ''} ${order.productName ?? ''}`.toLowerCase().includes(deferredSearch),
-  )
+  const visible = orders.filter((order) => `${order.orderNumber} ${order.customerName ?? ''} ${order.productName ?? ''}`.toLowerCase().includes(deferredSearch))
 
   function updateDetail(updated: PressOrderDetail) {
     setDetail(updated)
@@ -504,12 +445,7 @@ export function PressWorkspace() {
         <div className="workflow-filters press-search">
           <label>
             <span>Search assigned jobs</span>
-            <TextInput
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Order, customer, product"
-            />
+            <TextInput type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Order, customer, product" />
           </label>
         </div>
         <div className="workflow-order-list">
@@ -550,13 +486,7 @@ export function PressWorkspace() {
           <strong>Loading production job</strong>
         </Card>
       ) : detail ? (
-        <PressDetail
-          key={`${detail.id}-${detail.runStatus}`}
-          order={detail}
-          shippingUsers={shippingUsers}
-          onUpdated={updateDetail}
-          onCompleted={removeCompleted}
-        />
+        <PressDetail key={`${detail.id}-${detail.runStatus}`} order={detail} shippingUsers={shippingUsers} onUpdated={updateDetail} onCompleted={removeCompleted} />
       ) : (
         <Card className="press-detail press-detail-empty">
           <Factory size={28} />

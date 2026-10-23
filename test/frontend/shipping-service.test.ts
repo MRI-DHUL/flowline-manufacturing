@@ -18,9 +18,7 @@ describe('Shipping service', () => {
     }
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ orders: [order] }), { status: 200, headers: { 'content-type': 'application/json' } }),
-      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ orders: [order] }), { status: 200, headers: { 'content-type': 'application/json' } }))
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ order: { ...order, status: 'Dispatched' } }), {
           status: 200,
@@ -30,9 +28,6 @@ describe('Shipping service', () => {
     vi.stubGlobal('fetch', fetchMock)
     await expect(listShippingOrders()).resolves.toEqual([order])
     await dispatchShippingOrder(order.id, payload)
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      `https://api.example/api/v1/shipping/orders/${order.id}/dispatch`,
-      expect.objectContaining({ method: 'POST', body: JSON.stringify(payload) }),
-    )
+    expect(fetchMock).toHaveBeenLastCalledWith(`https://api.example/api/v1/shipping/orders/${order.id}/dispatch`, expect.objectContaining({ method: 'POST', body: JSON.stringify(payload) }))
   })
 })

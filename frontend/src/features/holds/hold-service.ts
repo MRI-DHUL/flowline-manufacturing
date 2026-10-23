@@ -1,3 +1,5 @@
+import { ApiRequestError, requestJson } from '../../shared/api/client'
+
 export type HoldOwner = { authUserId: string; displayName: string; email: string }
 export type HoldRecord = {
   id: string
@@ -16,33 +18,28 @@ export type HoldRecord = {
   resolvedAt: string | null
 }
 
-type ErrorBody = { error?: { code?: string; message?: string; fields?: string[] } }
-
 export class HoldRequestError extends Error {
   readonly fields: string[]
   readonly status: number
-  constructor(status: number, body: ErrorBody) {
+  readonly code: string
+  constructor(status: number, body: { error?: { code?: string; message?: string; fields?: string[] } }) {
     super(body.error?.message ?? 'The hold action could not be completed.')
     this.name = 'HoldRequestError'
+    this.code = body.error?.code ?? 'REQUEST_FAILED'
     this.status = status
     this.fields = body.error?.fields ?? []
   }
 }
 
-function apiBase() {
-  const value = import.meta.env.VITE_API_BASE_URL?.trim()
-  if (!value) throw new Error('The Flowline API URL is not configured.')
-  return value.replace(/\/$/, '')
-}
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBase()}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
-  })
-  const body = (await response.json().catch(() => ({}))) as T & ErrorBody
-  if (!response.ok) throw new HoldRequestError(response.status, body)
-  return body
+  try {
+    return await requestJson<T>(path, init)
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throw new HoldRequestError(error.status, { error: { code: error.code, message: error.message, fields: error.fields } })
+    }
+    throw error
+  }
 }
 
 export async function listHoldOwners(team: string) {
@@ -64,9 +61,6 @@ export async function placeOrderHold(
 ) {
   return (await request<{ hold: HoldRecord }>(`/api/v1/orders/${orderId}/holds`, { method: 'POST', body: JSON.stringify(input) })).hold
 }
-export async function resolveOrderHold(
-  holdId: string,
-  input: { action: 'RESUME' | 'REVIEW' | 'CANCEL'; resolution: string; stage?: string; ownerAuthUserId?: string | null },
-) {
+export async function resolveOrderHold(holdId: string, input: { action: 'RESUME' | 'REVIEW' | 'CANCEL'; resolution: string; stage?: string; ownerAuthUserId?: string | null }) {
   return (await request<{ hold: HoldRecord }>(`/api/v1/holds/${holdId}/resolve`, { method: 'POST', body: JSON.stringify(input) })).hold
 }

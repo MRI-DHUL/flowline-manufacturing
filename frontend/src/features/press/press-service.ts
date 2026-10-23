@@ -1,3 +1,5 @@
+import { ApiRequestError, requestJson } from '../../shared/api/client'
+
 export type PressOrderSummary = {
   id: string
   orderNumber: string
@@ -39,8 +41,6 @@ export type PressOrderDetail = PressOrderSummary & {
   }>
 }
 
-type ErrorBody = { error?: { code?: string; message?: string; fields?: string[] } }
-
 export class PressRequestError extends Error {
   readonly status: number
   readonly code: string
@@ -55,27 +55,15 @@ export class PressRequestError extends Error {
   }
 }
 
-function apiBase() {
-  const value = import.meta.env.VITE_API_BASE_URL?.trim()
-  if (!value) throw new Error('The Flowline API URL is not configured.')
-  return value.replace(/\/$/, '')
-}
-
 async function request<T>(path: string, init?: RequestInit) {
-  const response = await fetch(`${apiBase()}${path}`, {
-    credentials: 'include',
-    ...init,
-    headers: { ...(init?.body !== undefined ? { 'content-type': 'application/json' } : {}), ...init?.headers },
-  })
-  const body = (await response.json().catch(() => ({}))) as ErrorBody
-  if (!response.ok)
-    throw new PressRequestError(
-      response.status,
-      body.error?.code ?? 'REQUEST_FAILED',
-      body.error?.message ?? 'The Press request failed.',
-      body.error?.fields ?? [],
-    )
-  return body as T
+  try {
+    return await requestJson<T>(path, init)
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throw new PressRequestError(error.status, error.code, error.message || 'The Press request failed.', error.fields)
+    }
+    throw error
+  }
 }
 
 export async function listPressOrders() {
@@ -114,9 +102,6 @@ export function reportProductionIssue(orderId: string, input: { category: string
 export function resolveProductionIssue(orderId: string, input: { action: 'RESUME' | 'REVIEW'; resolution: string }) {
   return orderAction(orderId, 'rework/resolve', input)
 }
-export function completePressOrder(
-  orderId: string,
-  input: { goodQuantity: number; wasteQuantity: number; notes: string; shippingUserAuthUserId: string },
-) {
+export function completePressOrder(orderId: string, input: { goodQuantity: number; wasteQuantity: number; notes: string; shippingUserAuthUserId: string }) {
   return orderAction(orderId, 'complete', input)
 }

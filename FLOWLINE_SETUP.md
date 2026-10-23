@@ -111,6 +111,15 @@ HOST=127.0.0.1
 PORT=3000
 FRONTEND_ORIGIN=http://127.0.0.1:5173
 DATABASE_URL=postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require
+JWT_SECRET=replace-with-a-random-secret-at-least-32-characters-long
+JWT_SECRETS=
+SMTP_ENABLED=false
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=your-gmail-address@flowline.com
+SMTP_PASSWORD=your-gmail-app-password
+SMTP_FROM=Flowline <your-gmail-address@flowline.com>
 LOG_LEVEL=info
 ```
 
@@ -133,6 +142,17 @@ Create `database/.env` from `database/.env.example`:
 ```env
 DATABASE_URL=postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require
 ```
+
+### Gmail SMTP
+
+SMTP is disabled by default. To enable email delivery:
+
+1. Enable two-factor authentication on the Gmail account.
+2. Create a Google app password for Flowline.
+3. Set `SMTP_ENABLED=true`.
+4. Set `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM`.
+
+Use the Gmail app password, not the normal Gmail account password. Store it only in `backend/.env` or a production secret manager.
 
 ## 5. Database Setup
 
@@ -489,6 +509,9 @@ Never edit a migration that is already applied.
 - Role permissions are enforced by the backend, not only by UI visibility.
 - Audit events are append-only.
 - Replace all demo passwords before deploying.
+- Replace `JWT_SECRET` with a unique secret before deploying. Production startup rejects the development fallback.
+- Every backend response includes `x-request-id` for log correlation and production troubleshooting.
+- For key rotation, set `JWT_SECRETS` to a comma-separated list with the newest signing key first and previous keys after it. Remove retired keys after active sessions expire.
 
 ## 13. Current Verification Baseline
 

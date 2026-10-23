@@ -1,3 +1,5 @@
+import { ApiRequestError, requestJson } from '../../shared/api/client'
+
 export type RdOrderSummary = {
   id: string
   orderNumber: string
@@ -75,8 +77,6 @@ export type PlanningUser = {
   email: string
 }
 
-type ErrorBody = { error?: { code?: string; message?: string; fields?: string[] } }
-
 export class RdRequestError extends Error {
   readonly status: number
   readonly code: string
@@ -91,32 +91,15 @@ export class RdRequestError extends Error {
   }
 }
 
-function apiBase() {
-  const value = import.meta.env.VITE_API_BASE_URL?.trim()
-  if (!value) throw new Error('The Flowline API URL is not configured.')
-  return value.replace(/\/$/, '')
-}
-
-async function parse<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => ({}))) as ErrorBody
-  if (!response.ok) {
-    throw new RdRequestError(
-      response.status,
-      body.error?.code ?? 'REQUEST_FAILED',
-      body.error?.message ?? 'The R&D request failed.',
-      body.error?.fields ?? [],
-    )
-  }
-  return body as T
-}
-
 async function request<T>(path: string, init?: RequestInit) {
-  const response = await fetch(`${apiBase()}${path}`, {
-    credentials: 'include',
-    ...init,
-    headers: { 'content-type': 'application/json', ...init?.headers },
-  })
-  return parse<T>(response)
+  try {
+    return await requestJson<T>(path, init)
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throw new RdRequestError(error.status, error.code, error.message || 'The R&D request failed.', error.fields)
+    }
+    throw error
+  }
 }
 
 export async function listRdOrders() {
@@ -143,8 +126,13 @@ export async function submitRdDecision(orderId: string, input: RdDecisionInput) 
 }
 
 export async function downloadRdAttachment(orderId: string, attachmentId: string, fileName: string) {
-  const response = await fetch(`${apiBase()}/api/v1/rd/orders/${orderId}/attachments/${attachmentId}`, { credentials: 'include' })
-  if (!response.ok) await parse(response)
+  const apiUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+  if (!apiUrl) throw new Error('The Flowline API URL is not configured.')
+  const response = await fetch(`${apiUrl.replace(/\/$/, '')}/api/v1/rd/orders/${orderId}/attachments/${attachmentId}`, { credentials: 'include' })
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: { code?: string; message?: string; fields?: string[] } }
+    throw new RdRequestError(response.status, body.error?.code ?? 'REQUEST_FAILED', body.error?.message ?? 'The R&D request failed.', body.error?.fields ?? [])
+  }
   const url = URL.createObjectURL(await response.blob())
   const anchor = document.createElement('a')
   anchor.href = url

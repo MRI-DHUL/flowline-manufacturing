@@ -44,15 +44,7 @@ const emptyDecision: RdDecisionInput = {
   clarificationQuestion: '',
 }
 
-function OrderDetail({
-  order,
-  planners,
-  onUpdated,
-}: {
-  order: RdOrderDetail
-  planners: PlanningUser[]
-  onUpdated: (order: RdOrderDetail) => void
-}) {
+function OrderDetail({ order, planners, onUpdated }: { order: RdOrderDetail; planners: PlanningUser[]; onUpdated: (order: RdOrderDetail) => void }) {
   const { showToast } = useToast()
   const [values, setValues] = useState(emptyDecision)
   const [fieldErrors, setFieldErrors] = useState<string[]>([])
@@ -101,13 +93,7 @@ function OrderDetail({
         </div>
         <div className="rd-detail-header-actions">
           <ReportIssueButton orderId={order.id} orderNumber={order.orderNumber} />
-          <HoldControls
-            orderId={order.id}
-            orderNumber={order.orderNumber}
-            status={order.status}
-            stage={order.stage}
-            defaultTeam="R&amp;D"
-          />
+          <HoldControls orderId={order.id} orderNumber={order.orderNumber} status={order.status} stage={order.stage} defaultTeam="R&amp;D" />
           <div className="workflow-owner">
             <small>Technical owner</small>
             <strong>R&amp;D</strong>
@@ -170,13 +156,7 @@ function OrderDetail({
                     <strong>{attachment.fileName}</strong>
                     <small>{Math.ceil(attachment.sizeBytes / 1024)} KB</small>
                   </span>
-                  <Button
-                    variant="quiet"
-                    size="sm"
-                    type="button"
-                    aria-label={`Download ${attachment.fileName}`}
-                    onClick={() => void downloadRdAttachment(order.id, attachment.id, attachment.fileName)}
-                  >
+                  <Button variant="quiet" size="sm" type="button" aria-label={`Download ${attachment.fileName}`} onClick={() => void downloadRdAttachment(order.id, attachment.id, attachment.fileName)}>
                     <Download size={16} />
                   </Button>
                 </li>
@@ -217,17 +197,8 @@ function OrderDetail({
                 </Select>
               </FormField>
               {values.decision === 'APPROVED' ? (
-                <FormField
-                  label="Assign to Planning user"
-                  required
-                  className="wide"
-                  hint={!planners.length ? 'No active Planning users are available.' : undefined}
-                >
-                  <Select
-                    value={values.planningUserAuthUserId}
-                    onChange={(event) => update('planningUserAuthUserId', event.target.value)}
-                    aria-invalid={fieldErrors.includes('planningUserAuthUserId')}
-                  >
+                <FormField label="Assign to Planning user" required className="wide" hint={!planners.length ? 'No active Planning users are available.' : undefined}>
+                  <Select value={values.planningUserAuthUserId} onChange={(event) => update('planningUserAuthUserId', event.target.value)} aria-invalid={fieldErrors.includes('planningUserAuthUserId')}>
                     <option value="">Select an active Planning user</option>
                     {planners.map((planner) => (
                       <option key={planner.authUserId} value={planner.authUserId}>
@@ -249,10 +220,7 @@ function OrderDetail({
                 <TextInput value={values.toolingRequirements} onChange={(event) => update('toolingRequirements', event.target.value)} />
               </FormField>
               <FormField label="Material recommendation">
-                <TextInput
-                  value={values.materialRecommendation}
-                  onChange={(event) => update('materialRecommendation', event.target.value)}
-                />
+                <TextInput value={values.materialRecommendation} onChange={(event) => update('materialRecommendation', event.target.value)} />
               </FormField>
               <FormField label="Constraints and risks" className="wide">
                 <TextArea value={values.constraintsAndRisks} onChange={(event) => update('constraintsAndRisks', event.target.value)} />
@@ -318,8 +286,7 @@ export function RdWorkspace() {
         setSelectedId(items[0]?.id ?? null)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'R&D queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'R&D queue unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -336,8 +303,7 @@ export function RdWorkspace() {
         if (!cancelled) setPlanners(items)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'Planning users unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Planning users unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
     return () => {
       cancelled = true
@@ -352,8 +318,7 @@ export function RdWorkspace() {
         if (!cancelled) setDetail(item)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'R&D order unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'R&D order unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
     return () => {
       cancelled = true
@@ -379,12 +344,7 @@ export function RdWorkspace() {
         <div className="workflow-filters">
           <label>
             <span>Search orders</span>
-            <TextInput
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Order, customer, product"
-            />
+            <TextInput type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Order, customer, product" />
           </label>
           <label>
             <span>Status</span>
@@ -397,14 +357,7 @@ export function RdWorkspace() {
         </div>
         <div className="workflow-order-list">
           {visible.map((order) => (
-            <Button
-              key={order.id}
-              variant="quiet"
-              className="rd-order-button"
-              type="button"
-              aria-current={order.id === selectedId}
-              onClick={() => setSelectedId(order.id)}
-            >
+            <Button key={order.id} variant="quiet" className="rd-order-button" type="button" aria-current={order.id === selectedId} onClick={() => setSelectedId(order.id)}>
               <div>
                 <span className="workflow-status" data-tone={statusTone(order.status)}>
                   {order.status}

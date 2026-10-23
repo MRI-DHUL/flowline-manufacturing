@@ -42,3 +42,21 @@
     grid-column: 1/-1;
   }
 }
+
+.admin-order-monitor { display: grid; gap: 18px; }
+.admin-order-monitor-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 24px; }
+.admin-order-monitor-toolbar p, .admin-order-monitor-detail header p { margin: 0 0 5px; color: var(--wf-blue); font-size: 10px; font-weight: 850; text-transform: uppercase; }
+.admin-order-monitor-toolbar h2, .admin-order-monitor-detail h2 { margin: 0; color: var(--wf-navy); font-size: 19px; }
+.admin-order-monitor-toolbar span, .admin-order-monitor-detail header > div > span { display: block; margin-top: 6px; color: #718096; font-size: 11px; }
+.admin-order-monitor-toolbar > strong { color: var(--wf-navy); font-size: 20px; white-space: nowrap; }
+.admin-order-monitor-layout { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); gap: 18px; }
+.admin-order-monitor-list, .admin-order-monitor-detail { min-width: 0; padding: 18px; }
+.admin-order-monitor-filters { display: grid; grid-template-columns: minmax(0, 1fr) 130px; gap: 10px; }
+.admin-order-monitor-filters label { display: grid; gap: 6px; color: #52647a; font-size: 10px; font-weight: 800; }
+.admin-order-monitor-filters label > div { position: relative; }.admin-order-monitor-filters svg { position: absolute; top: 50%; left: 10px; color: #718096; pointer-events: none; transform: translateY(-50%); }.admin-order-monitor-filters input { padding-left: 32px; }
+.admin-order-monitor-rows { display: grid; gap: 8px; margin-top: 16px; max-height: 580px; overflow-y: auto; }
+.admin-order-monitor-rows button { display: grid; gap: 4px; padding: 12px; color: var(--wf-navy); text-align: left; background: #fff; border: 1px solid #dfe5e9; border-radius: 7px; cursor: pointer; }.admin-order-monitor-rows button[aria-current='true'] { border-color: #176b87; background: #f1fbfc; }.admin-order-monitor-rows button:hover { border-color: #78b6c0; }.admin-order-monitor-rows strong { font-size: 12px; }.admin-order-monitor-rows small, .admin-order-monitor-rows em { overflow: hidden; color: #718096; font-size: 10px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.admin-order-status { width: max-content; padding: 3px 6px; color: #176b87; background: #e8f6f7; border-radius: 4px; font-size: 9px; font-weight: 850; }
+.admin-order-monitor-detail header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid #dfe5e9; }.admin-order-read-only { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; color: #52647a; background: #f3f6f8; border-radius: 5px; font-size: 10px; font-weight: 800; white-space: nowrap; }.admin-order-monitor-detail dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; margin: 18px 0 0; }.admin-order-monitor-detail dl div { min-width: 0; }.admin-order-monitor-detail dt { color: #718096; font-size: 10px; }.admin-order-monitor-detail dd { margin: 4px 0 0; overflow-wrap: anywhere; color: var(--wf-navy); font-size: 12px; font-weight: 700; }.admin-order-monitor-empty, .admin-order-monitor-error { margin: 0; padding: 20px; color: #718096; text-align: center; }.admin-order-monitor-error { color: #b33535; background: #fff4f4; border: 1px solid #f0caca; border-radius: 8px; }
+@media (max-width: 850px) { .admin-order-monitor-layout { grid-template-columns: 1fr; } .admin-order-monitor-rows { max-height: 340px; } }
+@media (max-width: 620px) { .admin-order-monitor-toolbar { align-items: flex-start; flex-direction: column; } .admin-order-monitor-filters, .admin-order-monitor-detail dl { grid-template-columns: 1fr; } }

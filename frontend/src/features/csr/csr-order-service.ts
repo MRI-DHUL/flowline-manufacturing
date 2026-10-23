@@ -1,3 +1,5 @@
+import { ApiRequestError, requestFormData, requestJson } from '../../shared/api/client'
+
 export type OrderPatch = {
   customerName?: string | null
   destination?: string | null
@@ -67,10 +69,6 @@ export type CsrOrderDetail = CsrOrderSummary & {
   }>
 }
 
-type ErrorBody = {
-  error?: { code?: string; message?: string; fields?: string[] }
-}
-
 export class CsrRequestError extends Error {
   readonly status: number
   readonly code: string
@@ -85,32 +83,15 @@ export class CsrRequestError extends Error {
   }
 }
 
-function apiBase() {
-  const value = import.meta.env.VITE_API_BASE_URL?.trim()
-  if (!value) throw new Error('The Flowline API URL is not configured.')
-  return value.replace(/\/$/, '')
-}
-
-async function parse<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => ({}))) as ErrorBody
-  if (!response.ok) {
-    throw new CsrRequestError(
-      response.status,
-      body.error?.code ?? 'REQUEST_FAILED',
-      body.error?.message ?? 'The order request failed.',
-      body.error?.fields ?? [],
-    )
-  }
-  return body as T
-}
-
 async function request<T>(path: string, init?: RequestInit) {
-  const response = await fetch(`${apiBase()}${path}`, {
-    credentials: 'include',
-    ...init,
-    headers: init?.body instanceof FormData ? init.headers : { 'content-type': 'application/json', ...init?.headers },
-  })
-  return parse<T>(response)
+  try {
+    return init?.body instanceof FormData ? await requestFormData<T>(path, init.body, init) : await requestJson<T>(path, init)
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throw new CsrRequestError(error.status, error.code, error.message || 'The order request failed.', error.fields)
+    }
+    throw error
+  }
 }
 
 export async function listCsrOrders(filters: { search?: string; status?: string } = {}) {
@@ -167,10 +148,15 @@ export async function deleteCsrAttachment(orderId: string, attachmentId: string)
 }
 
 export async function downloadCsrAttachment(orderId: string, attachmentId: string, fileName: string) {
-  const response = await fetch(`${apiBase()}/api/v1/orders/${orderId}/attachments/${attachmentId}`, {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+  if (!apiUrl) throw new Error('The Flowline API URL is not configured.')
+  const response = await fetch(`${apiUrl.replace(/\/$/, '')}/api/v1/orders/${orderId}/attachments/${attachmentId}`, {
     credentials: 'include',
   })
-  if (!response.ok) await parse(response)
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: { code?: string; message?: string; fields?: string[] } }
+    throw new CsrRequestError(response.status, body.error?.code ?? 'REQUEST_FAILED', body.error?.message ?? 'The order request failed.', body.error?.fields ?? [])
+  }
   const url = URL.createObjectURL(await response.blob())
   const anchor = document.createElement('a')
   anchor.href = url

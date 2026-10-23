@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { NotificationHub } from '../../backend/src/notification-service.js'
-import type { NotificationItem } from '../../backend/src/notification-service.js'
+import { NotificationHub } from '../../backend/src/notifications/notification-service.js'
+import type { NotificationItem } from '../../backend/src/notifications/notification-service.js'
 import type { WebSocket } from 'ws'
 
 const notification: NotificationItem = {

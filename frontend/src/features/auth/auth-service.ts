@@ -1,11 +1,5 @@
 import type { LoginValues, RegisterValues } from './auth-validation'
-
-type AuthErrorPayload = {
-  error?: {
-    message?: string
-  }
-  message?: string
-}
+import { ApiRequestError, requestJson } from '../../shared/api/client'
 
 export type AuthUser = {
   id: string
@@ -26,33 +20,23 @@ export class AuthServiceNotConfiguredError extends Error {
   }
 }
 
-function getApiBaseUrl() {
+function ensureApiConfigured() {
   const url = import.meta.env.VITE_API_BASE_URL?.trim()
   if (!url) throw new AuthServiceNotConfiguredError()
-  return url.replace(/\/$/, '')
 }
 
 async function authRequest<T>(path: string, payload: object): Promise<T> {
-  let response: Response
-
+  ensureApiConfigured()
   try {
-    response = await fetch(`${getApiBaseUrl()}${path}`, {
+    return await requestJson<T>(path, {
       method: 'POST',
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
     })
   } catch (error) {
     if (error instanceof AuthServiceNotConfiguredError) throw error
+    if (error instanceof ApiRequestError) throw new Error(error.message, { cause: error })
     throw new Error('Unable to reach the Flowline API. Check the API URL and network connection.', { cause: error })
   }
-
-  const body = (await response.json().catch(() => ({}))) as AuthErrorPayload
-  if (!response.ok || body.error) {
-    throw new Error(body.error?.message ?? body.message ?? 'Authentication request failed.')
-  }
-
-  return body as T
 }
 
 export async function signIn(values: LoginValues): Promise<AuthResponse> {
@@ -68,4 +52,9 @@ export async function registerAccount(values: RegisterValues): Promise<AuthRespo
     email: values.email.trim().toLowerCase(),
     password: values.password,
   })
+}
+
+export async function getCurrentSession(): Promise<AuthUser> {
+  ensureApiConfigured()
+  return (await requestJson<AuthResponse>('/api/v1/auth/session')).user
 }

@@ -1,0 +1,196 @@
+/* Shared control-room polish: motion stays subtle so the work queues remain fast to scan. */
+.workflow-dashboard-page {
+  --wf-canvas: #eef3f5;
+  background:
+    linear-gradient(135deg, rgba(23, 107, 135, 0.06), transparent 34%),
+    repeating-linear-gradient(0deg, rgba(16, 37, 63, 0.018) 0 1px, transparent 1px 5px), var(--wf-canvas);
+}
+
+.workflow-header {
+  position: relative;
+  min-height: 78px;
+  background: linear-gradient(105deg, #0b2037 0%, #123452 58%, #176b87 140%);
+  box-shadow: 0 8px 24px rgba(16, 37, 63, 0.16);
+}
+
+.workflow-header::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  content: '';
+  background: linear-gradient(90deg, #35b7a0, #f4c95d 48%, transparent 90%);
+  opacity: 0.8;
+}
+
+.workflow-brand img {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.18);
+}
+
+.workflow-sidebar {
+  background: linear-gradient(180deg, #123452 0%, #10253f 72%, #0c2035 100%);
+}
+
+.workflow-sidebar nav a,
+.workflow-sidebar nav button,
+.workflow-notification,
+.workflow-logout,
+.workflow-order-list > button,
+.quick-actions button,
+.workflow-page-heading > button {
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.workflow-sidebar nav a:hover,
+.workflow-sidebar nav button:not(:disabled):hover {
+  transform: translateX(3px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.workflow-sidebar nav a[aria-current='page'] {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+}
+
+.workflow-main {
+  animation: workflow-rise-in 420ms ease both;
+}
+
+.workflow-page-heading h1 {
+  letter-spacing: 0;
+}
+
+.workflow-metrics article,
+.analytics-panel,
+.quick-actions,
+.workflow-workbench {
+  box-shadow: 0 14px 34px rgba(16, 37, 63, 0.07);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.workflow-metrics article:hover,
+.analytics-panel:hover,
+.quick-actions:hover {
+  transform: translateY(-3px);
+  border-color: #b9d5dc;
+  box-shadow: 0 18px 38px rgba(16, 37, 63, 0.11);
+}
+
+.workflow-metrics article:nth-child(2) {
+  animation-delay: 50ms;
+}
+.workflow-metrics article:nth-child(3) {
+  animation-delay: 100ms;
+}
+.workflow-metrics article:nth-child(4) {
+  animation-delay: 150ms;
+}
+.workflow-metrics article {
+  animation: workflow-rise-in 460ms ease both;
+}
+
+.workflow-order-list > button:hover {
+  transform: translateY(-2px);
+  border-color: #9bc6cf;
+  box-shadow: 0 10px 20px rgba(16, 37, 63, 0.08);
+}
+
+.workflow-order-list > button[aria-current='true'] {
+  box-shadow:
+    inset 3px 0 var(--wf-blue),
+    0 9px 22px rgba(23, 107, 135, 0.13);
+}
+
+.workflow-next-action {
+  background: linear-gradient(110deg, #dff2f5, #eaf7f5);
+}
+
+.workflow-notification-count {
+  animation: workflow-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes workflow-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes workflow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(179, 53, 53, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(179, 53, 53, 0);
+  }
+}
+
+@keyframes workflow-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes workflow-tab-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.45);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes workflow-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflow-main,
+  .workflow-metrics article,
+  .workflow-notification-count,
+  .workflow-notification-panel,
+  .workflow-tabs button[aria-selected='true']::after,
+  .workflow-detail > [role='tabpanel'],
+  .workflow-detail-content {
+    animation: none;
+  }
+  .workflow-sidebar nav a,
+  .workflow-sidebar nav button,
+  .workflow-notification,
+  .workflow-logout,
+  .workflow-order-list > button,
+  .quick-actions button,
+  .workflow-page-heading > button,
+  .workflow-metrics article,
+  .analytics-panel,
+  .quick-actions {
+    transition: none;
+  }
+}

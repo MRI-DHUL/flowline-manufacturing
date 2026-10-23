@@ -1,4 +1,5 @@
 import type { AuthUser } from '../auth/auth-service'
+import { ApiRequestError, requestJson } from '../../shared/api/client'
 
 export type DashboardRole = 'CSR' | 'R&D' | 'PLANNING' | 'PRESS' | 'SHIPPING' | 'MANAGER' | 'SYSTEM_ADMIN'
 
@@ -31,12 +32,9 @@ export type DashboardData = {
     stages: Array<{ label: string; count: number }>
     statuses: Array<{ label: string; count: number }>
     trend: Array<{ date: string; count: number }>
+    delivery: { delivered: number; onHold: number; openIssues: number; weekStart: string; weekEnd: string }
   }
   orders: DashboardOrder[]
-}
-
-type ApiError = {
-  error?: { code?: string; message?: string }
 }
 
 export class DashboardRequestError extends Error {
@@ -51,37 +49,21 @@ export class DashboardRequestError extends Error {
   }
 }
 
-function getApiBaseUrl() {
-  const value = import.meta.env.VITE_API_BASE_URL?.trim()
-  if (!value) throw new Error('The Flowline API URL is not configured.')
-  return value.replace(/\/$/, '')
-}
-
-async function parseResponse<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => ({}))) as ApiError
-  if (!response.ok) {
-    throw new DashboardRequestError(
-      response.status,
-      body.error?.code ?? 'REQUEST_FAILED',
-      body.error?.message ?? 'The dashboard request failed.',
-    )
+async function dashboardRequest<T>(path: string, init?: RequestInit) {
+  try {
+    return await requestJson<T>(path, init)
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      throw new DashboardRequestError(error.status, error.code, error.message || 'The dashboard request failed.')
+    }
+    throw error
   }
-  return body as T
 }
 
 export async function getDashboard(): Promise<DashboardData> {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/dashboard`, {
-    credentials: 'include',
-  })
-  return parseResponse<DashboardData>(response)
+  return dashboardRequest<DashboardData>('/api/v1/dashboard')
 }
 
 export async function logout() {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/auth/logout`, {
-    method: 'POST',
-    credentials: 'include',
-  })
-  if (!response.ok && response.status !== 204) {
-    await parseResponse(response)
-  }
+  await dashboardRequest('/api/v1/auth/logout', { method: 'POST' })
 }

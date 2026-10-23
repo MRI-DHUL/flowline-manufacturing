@@ -1,7 +1,7 @@
 import type pg from 'pg'
 import { describe, expect, it, vi } from 'vitest'
-import type { AuthUser } from '../../backend/src/auth-service.js'
-import { PostgresPressService, PressError } from '../../backend/src/press-service.js'
+import type { AuthUser } from '../../backend/src/auth/auth-service.js'
+import { PostgresPressService, PressError } from '../../backend/src/press/press-service.js'
 
 const pressUser: AuthUser = {
   id: 'press-user-1',
@@ -38,18 +38,14 @@ describe('Press service gates', () => {
   it('requires a meaningful pause reason before database access', async () => {
     const { pool, service } = createService()
 
-    await expect(service.pause(pressUser, 'order-1', 'No')).rejects.toEqual(
-      expect.objectContaining<Partial<PressError>>({ code: 'PAUSE_REASON_REQUIRED' }),
-    )
+    await expect(service.pause(pressUser, 'order-1', 'No')).rejects.toEqual(expect.objectContaining<Partial<PressError>>({ code: 'PAUSE_REASON_REQUIRED' }))
     expect(pool.connect).not.toHaveBeenCalled()
   })
 
   it('denies non-Press users before querying the queue', async () => {
     const { pool, service } = createService()
 
-    await expect(service.listQueue({ ...pressUser, roles: ['SHIPPING'] })).rejects.toEqual(
-      expect.objectContaining<Partial<PressError>>({ code: 'FORBIDDEN', statusCode: 403 }),
-    )
+    await expect(service.listQueue({ ...pressUser, roles: ['SHIPPING'] })).rejects.toEqual(expect.objectContaining<Partial<PressError>>({ code: 'FORBIDDEN', statusCode: 403 }))
     expect(pool.query).not.toHaveBeenCalled()
   })
 })

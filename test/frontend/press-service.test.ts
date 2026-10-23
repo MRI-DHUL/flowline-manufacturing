@@ -13,12 +13,8 @@ describe('Press service', () => {
     const shippingUser = { authUserId: '66666666-6666-4666-8666-666666666666', displayName: 'Shipping User', email: 'shipping@example.com' }
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ orders: [order] }), { status: 200, headers: { 'content-type': 'application/json' } }),
-      )
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ users: [shippingUser] }), { status: 200, headers: { 'content-type': 'application/json' } }),
-      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ orders: [order] }), { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ users: [shippingUser] }), { status: 200, headers: { 'content-type': 'application/json' } }))
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ order: { ...order, status: 'Ready to Ship' } }), {
           status: 200,
@@ -32,9 +28,6 @@ describe('Press service', () => {
     const completion = { goodQuantity: 950, wasteQuantity: 50, notes: 'Complete', shippingUserAuthUserId: shippingUser.authUserId }
     await completePressOrder(order.id, completion)
 
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      `https://api.example/api/v1/press/orders/${order.id}/complete`,
-      expect.objectContaining({ method: 'POST', body: JSON.stringify(completion) }),
-    )
+    expect(fetchMock).toHaveBeenLastCalledWith(`https://api.example/api/v1/press/orders/${order.id}/complete`, expect.objectContaining({ method: 'POST', body: JSON.stringify(completion) }))
   })
 })

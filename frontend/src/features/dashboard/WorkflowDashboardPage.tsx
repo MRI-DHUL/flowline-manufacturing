@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, CircleAlert, ClipboardList, Clock3, LayoutDashboard, LogOut, Plus, RefreshCw, Search } from 'lucide-react'
+import { CircleAlert, ClipboardList, Clock3, FileSearch, LayoutDashboard, LogOut, Plus, RefreshCw, Search } from 'lucide-react'
 import { useDeferredValue, useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useToast } from '../../components/toast/useToast'
@@ -9,68 +9,27 @@ import { PressWorkspace } from '../press/PressWorkspace'
 import { ShippingWorkspace } from '../shipping/ShippingWorkspace'
 import { ManagerWorkspace } from '../manager/ManagerWorkspace'
 import { AdminWorkspace } from '../admin/AdminWorkspace'
-import { Button, SegmentedTabs, Select, TextInput } from '../../components/ui'
+import { AdminOrderMonitor } from '../admin/AdminOrderMonitor'
+import { Button, Select, TextInput } from '../../components/ui'
 import { CsrOrdersWorkspace } from '../csr/CsrOrdersWorkspace'
 import { CsrOrderStatusPage } from '../csr/CsrOrderStatusPage'
 import { NotificationsPage } from './NotificationsPage'
-import { listOrderActivity } from './activity-service'
-import type { OrderActivity } from './activity-service'
+import { DashboardAnalytics } from './DashboardAnalytics'
+import { DashboardNotificationPanel } from './DashboardNotificationPanel'
 import { roleWorkspaces } from './dashboard-config'
 import { DashboardRequestError, getDashboard, logout } from './dashboard-service'
-import type { DashboardData, DashboardOrder } from './dashboard-service'
+import type { DashboardData } from './dashboard-service'
 import { listNotifications, markNotificationRead, openNotificationStream } from './notification-service'
-import { ReportIssueButton } from '../issues/ReportIssueButton'
-import { HoldControls } from '../holds/HoldControls'
 import type { DashboardNotification } from './notification-service'
+import { OrderDetail } from './OrderDetail'
+import { RoleOverview } from './RoleOverview'
 import './workflow-dashboard.css'
-
-const stages = ['R&D', 'Planning', 'Press', 'Shipping', 'Delivered']
-const dateFormatter = new Intl.DateTimeFormat('en-GB', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-})
-
-function formatDate(value: string) {
-  return dateFormatter.format(new Date(`${value}T12:00:00`))
-}
-
-const notificationDateFormatter = new Intl.DateTimeFormat('en-GB', {
-  day: '2-digit',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-})
-
-function formatNotificationDate(value: string) {
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? 'Recently' : notificationDateFormatter.format(date)
-}
 
 function statusTone(status: string) {
   if (status === 'Delivered') return 'success'
   if (status === 'On Hold' || status === 'Rework Required') return 'danger'
   if (status === 'Scheduled' || status === 'In Production') return 'warning'
   return 'neutral'
-}
-
-function nextAction(status: string) {
-  return (
-    {
-      Draft: 'Complete required information and submit for review',
-      Submitted: 'Begin technical feasibility review',
-      'R&D Review': 'Complete feasibility review',
-      'Planning Review': 'Confirm materials and production capacity',
-      Scheduled: 'Accept and start the scheduled job',
-      'In Production': 'Record completed and waste quantities',
-      'Ready to Ship': 'Confirm dispatch readiness',
-      Dispatched: 'Confirm customer delivery',
-      Delivered: 'No action required',
-      'On Hold': 'Resolve the active hold',
-      'Rework Required': 'Complete required rework',
-      'Manager Review': 'Complete delivery manager review',
-    }[status] ?? 'Review current stage requirements'
-  )
 }
 
 function initials(name: string) {
@@ -80,283 +39,6 @@ function initials(name: string) {
     .map((part) => part[0])
     .join('')
     .toUpperCase()
-}
-
-function StageStepper({ order }: { order: DashboardOrder }) {
-  const activeIndex = Math.max(0, stages.indexOf(order.stage))
-
-  return (
-    <div className="workflow-stage-track" aria-label="Order progress">
-      {stages.map((stage, index) => (
-        <div
-          className={index < activeIndex ? 'complete' : index === activeIndex ? 'current' : ''}
-          key={stage}
-          aria-current={index === activeIndex ? 'step' : undefined}
-        >
-          <span aria-hidden="true" />
-          <small>{stage}</small>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function OrderDetail({
-  order,
-  canReportIssue,
-  canManageExceptions,
-}: {
-  order: DashboardOrder
-  canReportIssue: boolean
-  canManageExceptions: boolean
-}) {
-  const [tab, setTab] = useState<'overview' | 'activity'>('overview')
-  const [activity, setActivity] = useState<OrderActivity[]>([])
-  const [activityError, setActivityError] = useState('')
-
-  useEffect(() => {
-    if (tab !== 'activity') return
-    void listOrderActivity(order.id)
-      .then(setActivity)
-      .catch((error) => setActivityError(error instanceof Error ? error.message : 'Order activity could not be loaded.'))
-  }, [order.id, tab])
-
-  return (
-    <article className="workflow-detail">
-      <SegmentedTabs
-        className="workflow-tabs"
-        options={[
-          { value: 'overview', label: 'Overview' },
-          { value: 'activity', label: 'Activity' },
-        ]}
-        value={tab}
-        onChange={(value) => setTab(value as typeof tab)}
-      />
-
-      {tab === 'overview' ? (
-        <div className="workflow-detail-content" role="tabpanel">
-          <header className="workflow-order-heading">
-            <div>
-              <h2>{order.product}</h2>
-              <p>
-                {order.orderNumber} · {order.customer}
-              </p>
-            </div>
-            <div className="workflow-order-heading-actions">
-              {canReportIssue ? <ReportIssueButton orderId={order.id} orderNumber={order.orderNumber} /> : null}
-              {canManageExceptions ? (
-                <HoldControls
-                  orderId={order.id}
-                  orderNumber={order.orderNumber}
-                  status={order.status}
-                  stage={order.stage}
-                  defaultTeam={order.stage === 'R&D' ? 'R&D' : order.stage.toUpperCase()}
-                />
-              ) : null}
-            </div>
-          </header>
-
-          <StageStepper order={order} />
-
-          <section className="workflow-next-action" aria-label="Next required action">
-            <div>
-              <strong>Next required action</strong>
-              <p>{nextAction(order.status)}</p>
-            </div>
-            <button type="button" disabled>
-              Open order
-            </button>
-          </section>
-
-          <dl className="workflow-summary">
-            <div>
-              <dt>Requested delivery</dt>
-              <dd>{formatDate(order.requestedDate)}</dd>
-            </div>
-            <div>
-              <dt>Priority</dt>
-              <dd>{order.priority ?? 'Normal'}</dd>
-            </div>
-            <div>
-              <dt>Order age</dt>
-              <dd>
-                {order.ageDays} days{order.slaRisk ? <small className="workflow-sla-risk">SLA risk</small> : null}
-              </dd>
-            </div>
-            <div>
-              <dt>Current stage</dt>
-              <dd>{order.stage}</dd>
-            </div>
-          </dl>
-        </div>
-      ) : (
-        <div className="workflow-activity" role="tabpanel">
-          <div className="workflow-timeline-heading">
-            <Clock3 size={24} aria-hidden="true" />
-            <div>
-              <small>Order activity</small>
-              <h2>Lifecycle snapshot</h2>
-            </div>
-          </div>
-          {activityError ? (
-            <p role="alert">{activityError}</p>
-          ) : (
-            <ol className="workflow-timeline">
-              {activity.map((item, index) => (
-                <li className={index === 0 ? 'complete' : ''} key={item.id}>
-                  <span />
-                  <div>
-                    <strong>{item.newStatus ?? item.action.replaceAll('_', ' ')}</strong>
-                    <small>
-                      {item.actorName} ·{' '}
-                      {new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.occurredAt))}
-                    </small>
-                    <p>
-                      {item.reason ??
-                        (item.previousStatus && item.newStatus ? `${item.previousStatus} → ${item.newStatus}` : 'Workflow event recorded.')}
-                    </p>
-                    {Object.keys(item.details ?? {}).length ? (
-                      <small className="workflow-event-details">
-                        {Object.entries(item.details)
-                          .map(([key, value]) => `${key}: ${String(value)}`)
-                          .join(' · ')}
-                      </small>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-      )}
-    </article>
-  )
-}
-
-function RoleOverview({
-  data,
-  onViewOrders,
-  onRefresh,
-  onLogout,
-}: {
-  data: DashboardData
-  onViewOrders: () => void
-  onRefresh: () => void
-  onLogout: () => void
-}) {
-  const copy: Record<DashboardData['role'], { eyebrow: string; title: string; detail: string }> = {
-    CSR: {
-      eyebrow: 'Request pipeline',
-      title: 'Keep every customer promise moving.',
-      detail: 'Draft, submit, and follow the handoffs that need your attention.',
-    },
-    'R&D': {
-      eyebrow: 'Technical cockpit',
-      title: 'Decide what can be built.',
-      detail: 'Review feasibility, constraints, and the next technical handoff.',
-    },
-    PLANNING: {
-      eyebrow: 'Capacity board',
-      title: 'Turn approval into a schedule.',
-      detail: 'Balance material readiness, production lines, and Press ownership.',
-    },
-    PRESS: {
-      eyebrow: 'Production pulse',
-      title: 'Make the next run count.',
-      detail: 'Track scheduled work, production progress, and exceptions.',
-    },
-    SHIPPING: {
-      eyebrow: 'Dispatch board',
-      title: 'Move finished work to the client.',
-      detail: 'Verify readiness, dispatch goods, and surface delivery risks.',
-    },
-    MANAGER: {
-      eyebrow: 'Delivery control',
-      title: 'Own the final handoff.',
-      detail: 'Review escalated deliveries and close the customer-facing loop.',
-    },
-    SYSTEM_ADMIN: {
-      eyebrow: 'Access console',
-      title: 'Keep the workspace ready.',
-      detail: 'Activate people and maintain the role structure behind every queue.',
-    },
-  }
-  const role = copy[data.role]
-  const spotlight = data.orders.slice(0, 3)
-  return (
-    <section
-      className={`role-overview role-overview-${data.role.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
-      aria-label={`${role.title} overview`}
-    >
-      <header className="role-overview-hero">
-        <div>
-          <p>{role.eyebrow}</p>
-          <h2>{role.title}</h2>
-          <span>{role.detail}</span>
-        </div>
-        <button type="button" onClick={onViewOrders}>
-          Open workspace <span aria-hidden="true">↗</span>
-        </button>
-      </header>
-      <div className="role-overview-grid">
-        <article className="role-overview-primary">
-          <small>Current workload</small>
-          <strong>{data.metrics.active}</strong>
-          <span>{data.role === 'MANAGER' ? 'delivery handoffs in your control' : 'active orders in your queue'}</span>
-          <div className="role-progress">
-            <i style={{ width: `${Math.min(100, data.metrics.total ? (data.metrics.completed / data.metrics.total) * 100 : 0)}%` }} />
-          </div>
-          <small>
-            {data.metrics.completed} completed · {data.metrics.attention} need attention
-          </small>
-        </article>
-        <article className="role-overview-list">
-          <header>
-            <div>
-              <small>Priority view</small>
-              <h3>{data.role === 'SYSTEM_ADMIN' ? 'Workspace accounts' : 'Orders to watch'}</h3>
-            </div>
-            <button type="button" onClick={onRefresh} aria-label="Refresh overview">
-              ↻
-            </button>
-          </header>
-          {spotlight.length ? (
-            <ul>
-              {spotlight.map((order) => (
-                <li key={order.id}>
-                  <span
-                    className="role-order-dot"
-                    data-tone={order.status === 'On Hold' || order.status === 'Rework Required' ? 'danger' : 'normal'}
-                  />
-                  <div>
-                    <strong>{order.product}</strong>
-                    <small>
-                      {order.orderNumber} · {order.status}
-                    </small>
-                  </div>
-                  <b>{order.ageDays}d</b>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="role-overview-empty">No active handoffs are waiting here.</p>
-          )}
-        </article>
-        <article className="role-overview-signal">
-          <small>Signal</small>
-          <strong>{data.metrics.attention ? 'Attention needed' : 'Flow is clear'}</strong>
-          <p>
-            {data.metrics.attention
-              ? `${data.metrics.attention} order${data.metrics.attention === 1 ? '' : 's'} need intervention.`
-              : 'No active exceptions are currently assigned to this workspace.'}
-          </p>
-          <button type="button" onClick={onLogout}>
-            Sign out safely
-          </button>
-        </article>
-      </div>
-    </section>
-  )
 }
 
 export function WorkflowDashboardPage() {
@@ -512,9 +194,7 @@ export function WorkflowDashboardPage() {
     if (!notification.readAt) {
       try {
         await markNotificationRead(notification.id)
-        setNotifications((current) =>
-          current.map((item) => (item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item)),
-        )
+        setNotifications((current) => current.map((item) => (item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item)))
       } catch (requestError) {
         showToast({
           title: 'Notification could not be marked read',
@@ -555,6 +235,8 @@ export function WorkflowDashboardPage() {
     ? 'orders'
     : location.pathname.startsWith('/dashboard/notifications')
       ? 'notifications'
+      : data.role === 'SYSTEM_ADMIN' && location.pathname.startsWith('/dashboard/order-monitor')
+        ? 'admin-orders'
       : data.role === 'CSR' && location.pathname.startsWith('/dashboard/order-status')
         ? 'order-status'
         : 'overview'
@@ -592,63 +274,17 @@ export function WorkflowDashboardPage() {
           </span>
         </div>
         <div className="workflow-header-actions">
-          <div className="workflow-notification-wrap">
-            <button
-              className="workflow-notification"
-              type="button"
-              aria-label={`Notifications${unreadNotifications.length ? `, ${unreadNotifications.length} unread` : ''}`}
-              aria-expanded={notificationsOpen}
-              onClick={() => setNotificationsOpen((open) => !open)}
-            >
-              <Bell size={19} />
-              {unreadNotifications.length ? (
-                <span className="workflow-notification-count">{unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}</span>
-              ) : null}
-            </button>
-            {notificationsOpen ? (
-              <section className="workflow-notification-panel" aria-label="Notifications">
-                <header>
-                  <div>
-                    <strong>Notifications</strong>
-                    <small>{unreadNotifications.length ? `${unreadNotifications.length} unread` : 'All caught up'}</small>
-                  </div>
-                  <CheckCheck size={18} aria-hidden="true" />
-                </header>
-                {notifications.length ? (
-                  <ul>
-                    {notifications.slice(0, 5).map((notification) => (
-                      <li key={notification.id} data-unread={!notification.readAt}>
-                        <button type="button" onClick={() => void openNotification(notification)}>
-                          <strong>{notification.title}</strong>
-                          <span>{notification.message}</span>
-                          <small>
-                            {formatNotificationDate(notification.createdAt)}
-                            {notification.orderNumber ? ` · ${notification.orderNumber}` : ''}
-                          </small>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="workflow-notification-empty">No notifications yet.</p>
-                )}
-                {notifications.length > 5 ? (
-                  <Button
-                    className="workflow-notification-more"
-                    variant="quiet"
-                    size="sm"
-                    type="button"
-                    onClick={() => {
-                      setNotificationsOpen(false)
-                      navigate('/dashboard/notifications')
-                    }}
-                  >
-                    More notifications
-                  </Button>
-                ) : null}
-              </section>
-            ) : null}
-          </div>
+          <DashboardNotificationPanel
+            notifications={notifications}
+            notificationsOpen={notificationsOpen}
+            unreadCount={unreadNotifications.length}
+            onToggle={() => setNotificationsOpen((open) => !open)}
+            onOpen={(notification) => void openNotification(notification)}
+            onMore={() => {
+              setNotificationsOpen(false)
+              navigate('/dashboard/notifications')
+            }}
+          />
           <div className="workflow-user">
             <span>{initials(data.user.displayName)}</span>
             <div>
@@ -673,6 +309,12 @@ export function WorkflowDashboardPage() {
               <ClipboardList size={19} aria-hidden="true" />
               <span>{data.role === 'SYSTEM_ADMIN' ? 'Users' : 'Orders'}</span>
             </NavLink>
+            {data.role === 'SYSTEM_ADMIN' ? (
+              <NavLink to="/dashboard/order-monitor" aria-label="Order monitor">
+                <FileSearch size={19} aria-hidden="true" />
+                <span>Order monitor</span>
+              </NavLink>
+            ) : null}
             {data.role === 'CSR' ? (
               <NavLink to="/dashboard/order-status" aria-label="Order Status">
                 <Clock3 size={19} aria-hidden="true" />
@@ -697,6 +339,8 @@ export function WorkflowDashboardPage() {
                     ? 'Notifications'
                     : activeView === 'order-status'
                       ? 'Order Status'
+                      : activeView === 'admin-orders'
+                        ? 'Order monitor'
                       : data.role === 'SYSTEM_ADMIN'
                         ? 'Users'
                         : csrMode === 'new'
@@ -712,6 +356,8 @@ export function WorkflowDashboardPage() {
                     ? 'Review, read, and manage all workspace notifications.'
                     : activeView === 'order-status'
                       ? 'Track order handoffs, status durations, and ownership history.'
+                      : activeView === 'admin-orders'
+                        ? 'Review all order details and delivery status. This view is read-only.'
                       : data.role === 'SYSTEM_ADMIN'
                         ? 'Activate accounts and maintain workflow role assignments.'
                         : 'Search, filter, and review orders assigned to your workspace.'}
@@ -729,20 +375,15 @@ export function WorkflowDashboardPage() {
             <NotificationsPage />
           ) : activeView === 'order-status' ? (
             <CsrOrderStatusPage />
+          ) : activeView === 'admin-orders' && data.role === 'SYSTEM_ADMIN' ? (
+            <AdminOrderMonitor />
           ) : activeView === 'overview' ? (
-            <RoleOverview
-              data={data}
-              onViewOrders={() => navigate('/dashboard/orders')}
-              onRefresh={() => void loadDashboard()}
-              onLogout={() => void handleLogout()}
-            />
+            <>
+              <RoleOverview data={data} onViewOrders={() => navigate('/dashboard/orders')} onRefresh={() => void loadDashboard()} onLogout={() => void handleLogout()} />
+              <DashboardAnalytics data={data} onViewOrders={() => navigate('/dashboard/orders')} onRefresh={() => void loadDashboard()} onLogout={() => void handleLogout()} />
+            </>
           ) : data.role === 'CSR' ? (
-            <CsrOrdersWorkspace
-              key={`${csrMode}-${csrOrderId ?? 'none'}`}
-              mode={csrMode}
-              orderId={csrOrderId}
-              onBackToOrders={() => navigate('/dashboard/orders')}
-            />
+            <CsrOrdersWorkspace key={`${csrMode}-${csrOrderId ?? 'none'}`} mode={csrMode} orderId={csrOrderId} onBackToOrders={() => navigate('/dashboard/orders')} />
           ) : data.role === 'R&D' ? (
             <RdWorkspace />
           ) : data.role === 'PLANNING' ? (
@@ -770,12 +411,7 @@ export function WorkflowDashboardPage() {
                     <span>Search orders</span>
                     <div>
                       <Search size={16} />
-                      <TextInput
-                        type="search"
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Order, customer, product"
-                      />
+                      <TextInput type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Order, customer, product" />
                     </div>
                   </label>
                   <label>
@@ -818,12 +454,7 @@ export function WorkflowDashboardPage() {
               </aside>
 
               {selectedOrder ? (
-                <OrderDetail
-                  key={selectedOrder.id}
-                  order={selectedOrder}
-                  canReportIssue={selectedOrder.status === 'Manager Review'}
-                  canManageExceptions={selectedOrder.status === 'Manager Review'}
-                />
+                <OrderDetail key={selectedOrder.id} order={selectedOrder} canReportIssue={selectedOrder.status === 'Manager Review'} canManageExceptions={selectedOrder.status === 'Manager Review'} />
               ) : (
                 <article className="workflow-detail">
                   <div className="workflow-tabs" role="tablist" aria-label="Order views">

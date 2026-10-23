@@ -108,17 +108,10 @@ export function HoldControls({ orderId, orderNumber, status, stage, defaultTeam 
         <p>{activeHold.reason}</p>
         <div className="hold-form-grid">
           <FormField label="Resolution" required className="wide">
-            <TextArea
-              value={resolution.text}
-              onChange={(event) => setResolution((current) => ({ ...current, text: event.target.value }))}
-              placeholder="Record the corrective action and evidence."
-            />
+            <TextArea value={resolution.text} onChange={(event) => setResolution((current) => ({ ...current, text: event.target.value }))} placeholder="Record the corrective action and evidence." />
           </FormField>
           <FormField label="Outcome" required>
-            <Select
-              value={resolution.action}
-              onChange={(event) => setResolution((current) => ({ ...current, action: event.target.value as typeof current.action }))}
-            >
+            <Select value={resolution.action} onChange={(event) => setResolution((current) => ({ ...current, action: event.target.value as typeof current.action }))}>
               <option value="RESUME">Resume previous stage</option>
               <option value="REVIEW">Send for re-review</option>
               <option value="CANCEL">Cancel order</option>
@@ -126,10 +119,7 @@ export function HoldControls({ orderId, orderNumber, status, stage, defaultTeam 
           </FormField>
           {resolution.action === 'REVIEW' ? (
             <FormField label="Review stage" required>
-              <Select
-                value={resolution.stage}
-                onChange={(event) => setResolution((current) => ({ ...current, stage: event.target.value }))}
-              >
+              <Select value={resolution.stage} onChange={(event) => setResolution((current) => ({ ...current, stage: event.target.value }))}>
                 {stages.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
@@ -138,10 +128,7 @@ export function HoldControls({ orderId, orderNumber, status, stage, defaultTeam 
           ) : null}
           {resolution.action === 'REVIEW' ? (
             <FormField label="Review owner" required>
-              <Select
-                value={resolution.ownerAuthUserId}
-                onChange={(event) => setResolution((current) => ({ ...current, ownerAuthUserId: event.target.value }))}
-              >
+              <Select value={resolution.ownerAuthUserId} onChange={(event) => setResolution((current) => ({ ...current, ownerAuthUserId: event.target.value }))}>
                 <option value="">Select active owner</option>
                 {resolutionOwners.map((owner) => (
                   <option key={owner.authUserId} value={owner.authUserId}>
@@ -159,13 +146,7 @@ export function HoldControls({ orderId, orderNumber, status, stage, defaultTeam 
             disabled={busy || resolution.text.trim().length < 10 || (resolution.action === 'REVIEW' && !resolution.ownerAuthUserId)}
             onClick={() => void resolve(activeHold)}
           >
-            {resolution.action === 'CANCEL' ? (
-              <X size={16} />
-            ) : resolution.action === 'REVIEW' ? (
-              <Send size={16} />
-            ) : (
-              <PlayCircle size={16} />
-            )}
+            {resolution.action === 'CANCEL' ? <X size={16} /> : resolution.action === 'REVIEW' ? <Send size={16} /> : <PlayCircle size={16} />}
             {busy ? 'Saving...' : 'Record hold outcome'}
           </Button>
         </footer>
@@ -203,33 +184,20 @@ export function HoldControls({ orderId, orderNumber, status, stage, defaultTeam 
             <div className="hold-body">
               <div className="hold-form-grid">
                 <FormField label="Category" required>
-                  <TextInput
-                    value={values.category}
-                    onChange={(event) => setValues((current) => ({ ...current, category: event.target.value }))}
-                  />
+                  <TextInput value={values.category} onChange={(event) => setValues((current) => ({ ...current, category: event.target.value }))} />
                 </FormField>
                 <FormField label="Target resolution date" required>
-                  <TextInput
-                    type="date"
-                    value={values.targetResolutionDate}
-                    onChange={(event) => setValues((current) => ({ ...current, targetResolutionDate: event.target.value }))}
-                  />
+                  <TextInput type="date" value={values.targetResolutionDate} onChange={(event) => setValues((current) => ({ ...current, targetResolutionDate: event.target.value }))} />
                 </FormField>
                 <FormField label="Responsible team" required>
-                  <Select
-                    value={values.responsibleTeam}
-                    onChange={(event) => setValues((current) => ({ ...current, responsibleTeam: event.target.value, ownerAuthUserId: '' }))}
-                  >
+                  <Select value={values.responsibleTeam} onChange={(event) => setValues((current) => ({ ...current, responsibleTeam: event.target.value, ownerAuthUserId: '' }))}>
                     {teams.map((team) => (
                       <option key={team}>{team}</option>
                     ))}
                   </Select>
                 </FormField>
                 <FormField label="Responsible owner" required>
-                  <Select
-                    value={values.ownerAuthUserId}
-                    onChange={(event) => setValues((current) => ({ ...current, ownerAuthUserId: event.target.value }))}
-                  >
+                  <Select value={values.ownerAuthUserId} onChange={(event) => setValues((current) => ({ ...current, ownerAuthUserId: event.target.value }))}>
                     <option value="">Select active owner</option>
                     {owners.map((owner) => (
                       <option key={owner.authUserId} value={owner.authUserId}>
@@ -239,17 +207,10 @@ export function HoldControls({ orderId, orderNumber, status, stage, defaultTeam 
                   </Select>
                 </FormField>
                 <FormField label="Reason" required className="wide">
-                  <TextArea
-                    value={values.reason}
-                    onChange={(event) => setValues((current) => ({ ...current, reason: event.target.value }))}
-                    placeholder="Explain the blocker and its impact."
-                  />
+                  <TextArea value={values.reason} onChange={(event) => setValues((current) => ({ ...current, reason: event.target.value }))} placeholder="Explain the blocker and its impact." />
                 </FormField>
                 <FormField label="Corrective action" className="wide">
-                  <TextArea
-                    value={values.correctiveAction}
-                    onChange={(event) => setValues((current) => ({ ...current, correctiveAction: event.target.value }))}
-                  />
+                  <TextArea value={values.correctiveAction} onChange={(event) => setValues((current) => ({ ...current, correctiveAction: event.target.value }))} />
                 </FormField>
               </div>
             </div>
@@ -257,18 +218,7 @@ export function HoldControls({ orderId, orderNumber, status, stage, defaultTeam 
               <Button variant="quiet" type="button" onClick={() => setOpen(false)} disabled={busy}>
                 Cancel
               </Button>
-              <Button
-                variant="danger"
-                type="button"
-                disabled={
-                  busy ||
-                  !values.ownerAuthUserId ||
-                  values.reason.trim().length < 10 ||
-                  !values.category.trim() ||
-                  !values.targetResolutionDate
-                }
-                onClick={() => void place()}
-              >
+              <Button variant="danger" type="button" disabled={busy || !values.ownerAuthUserId || values.reason.trim().length < 10 || !values.category.trim() || !values.targetResolutionDate} onClick={() => void place()}>
                 <PauseCircle size={16} />
                 {busy ? 'Placing...' : 'Place order on hold'}
               </Button>

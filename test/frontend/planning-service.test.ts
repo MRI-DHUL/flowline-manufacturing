@@ -25,9 +25,7 @@ describe('Planning service', () => {
     const resources = { productionLines: [], pressUsers: [] }
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ orders: [order] }), { status: 200, headers: { 'content-type': 'application/json' } }),
-      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ orders: [order] }), { status: 200, headers: { 'content-type': 'application/json' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify(resources), { status: 200, headers: { 'content-type': 'application/json' } }))
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ order: { ...order, status: 'Scheduled' } }), {
@@ -41,19 +39,8 @@ describe('Planning service', () => {
     await expect(listPlanningResources()).resolves.toEqual(resources)
     await releasePlanningOrder(order.id, assessment)
 
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      'https://api.example/api/v1/planning/orders',
-      expect.objectContaining({ credentials: 'include' }),
-    )
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://api.example/api/v1/planning/resources',
-      expect.objectContaining({ credentials: 'include' }),
-    )
-    expect(fetchMock).toHaveBeenLastCalledWith(
-      `https://api.example/api/v1/planning/orders/${order.id}/release`,
-      expect.objectContaining({ method: 'POST', body: JSON.stringify(assessment) }),
-    )
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'https://api.example/api/v1/planning/orders', expect.objectContaining({ credentials: 'include' }))
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://api.example/api/v1/planning/resources', expect.objectContaining({ credentials: 'include' }))
+    expect(fetchMock).toHaveBeenLastCalledWith(`https://api.example/api/v1/planning/orders/${order.id}/release`, expect.objectContaining({ method: 'POST', body: JSON.stringify(assessment) }))
   })
 })

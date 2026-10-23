@@ -1,7 +1,7 @@
 import type pg from 'pg'
 import { describe, expect, it, vi } from 'vitest'
-import type { AuthUser } from '../../backend/src/auth-service.js'
-import { PostgresShippingService, ShippingError } from '../../backend/src/shipping-service.js'
+import type { AuthUser } from '../../backend/src/auth/auth-service.js'
+import { PostgresShippingService, ShippingError } from '../../backend/src/shipping/shipping-service.js'
 
 const user: AuthUser = {
   id: 'shipping-1',
@@ -31,16 +31,12 @@ describe('Shipping service gates', () => {
   })
   it('requires delivery time and recipient before database access', async () => {
     const { pool, service } = createService()
-    await expect(service.confirmDelivery(user, 'order-1', { actualDeliveryAt: '', receivedBy: '' })).rejects.toEqual(
-      expect.objectContaining<Partial<ShippingError>>({ code: 'DELIVERY_INCOMPLETE' }),
-    )
+    await expect(service.confirmDelivery(user, 'order-1', { actualDeliveryAt: '', receivedBy: '' })).rejects.toEqual(expect.objectContaining<Partial<ShippingError>>({ code: 'DELIVERY_INCOMPLETE' }))
     expect(pool.connect).not.toHaveBeenCalled()
   })
   it('denies non-Shipping users', async () => {
     const { pool, service } = createService()
-    await expect(service.listQueue({ ...user, roles: ['PRESS'] })).rejects.toEqual(
-      expect.objectContaining<Partial<ShippingError>>({ code: 'FORBIDDEN' }),
-    )
+    await expect(service.listQueue({ ...user, roles: ['PRESS'] })).rejects.toEqual(expect.objectContaining<Partial<ShippingError>>({ code: 'FORBIDDEN' }))
     expect(pool.query).not.toHaveBeenCalled()
   })
 })

@@ -1,0 +1,145 @@
+.workflow-workbench {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.72fr) minmax(0, 1.6fr);
+  min-height: 520px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--wf-border);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(16, 37, 63, 0.08);
+}
+.workflow-queue {
+  min-width: 0;
+  padding: 22px;
+  background: #f8fafc;
+  border-right: 1px solid var(--wf-border);
+}
+.workflow-queue-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.workflow-queue-title h2 {
+  margin: 0;
+  color: var(--wf-navy);
+  font-size: 18px;
+}
+.workflow-queue-title > strong {
+  display: grid;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  place-items: center;
+  color: #fff;
+  background: var(--wf-navy-light);
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.workflow-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 10px;
+  margin: 20px 0 16px;
+}
+.workflow-filters label {
+  display: grid;
+  gap: 6px;
+  color: #344960;
+  font-size: 10px;
+  font-weight: 750;
+}
+.workflow-filters label > div {
+  position: relative;
+}
+.workflow-filters svg {
+  position: absolute;
+  top: 12px;
+  left: 11px;
+  color: #748498;
+}
+.workflow-filters input,
+.workflow-filters select {
+  width: 100%;
+  height: 40px;
+  color: #1c2938;
+  background: #fff;
+  border: 1px solid #cbd6e1;
+  border-radius: 7px;
+}
+.workflow-filters input {
+  padding: 0 10px 0 34px;
+}
+.workflow-filters select {
+  padding: 0 8px;
+}
+
+.workflow-order-list {
+  display: grid;
+  gap: 10px;
+}
+.workflow-order-list > button {
+  width: 100%;
+  padding: 14px;
+  color: inherit;
+  background: #fff;
+  border: 1px solid var(--wf-border);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+.workflow-order-list > button[aria-current='true'] {
+  background: var(--wf-blue-soft);
+  border-color: var(--wf-blue);
+  box-shadow: inset 3px 0 var(--wf-blue);
+}
+.workflow-order-list > button > div,
+.workflow-order-list footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.workflow-order-list > button > div > small {
+  color: #a15c00;
+  font-size: 9px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.workflow-order-list > button > strong {
+  display: block;
+  margin-top: 10px;
+  color: var(--wf-navy);
+  font-size: 12px;
+}
+.workflow-order-list > button > p {
+  margin: 4px 0 12px;
+  color: #465d75;
+  font-size: 10px;
+}
+.workflow-order-list footer {
+  color: #718096;
+  font-size: 9px;
+}
+.workflow-queue-empty {
+  display: grid;
+  min-height: 250px;
+  padding: 30px 16px;
+  place-content: center;
+  color: #607389;
+  text-align: center;
+}
+.workflow-queue-empty svg {
+  margin: 0 auto 12px;
+  color: var(--wf-blue);
+}
+.workflow-queue-empty strong {
+  color: var(--wf-navy);
+  font-size: 13px;
+}
+.workflow-queue-empty p {
+  margin: 6px 0 0;
+  font-size: 10px;
+}
+

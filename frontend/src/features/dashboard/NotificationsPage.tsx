@@ -33,8 +33,7 @@ export function NotificationsPage() {
         if (!cancelled) setNotifications(items)
       })
       .catch((error) => {
-        if (!cancelled)
-          showToast({ title: 'Notifications unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
+        if (!cancelled) showToast({ title: 'Notifications unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -48,9 +47,7 @@ export function NotificationsPage() {
     if (notification.readAt) return
     try {
       await markNotificationRead(notification.id)
-      setNotifications((current) =>
-        current.map((item) => (item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item)),
-      )
+      setNotifications((current) => current.map((item) => (item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item)))
     } catch (error) {
       showToast({
         title: 'Notification could not be marked read',
@@ -109,23 +106,11 @@ export function NotificationsPage() {
                   </Button>
                 ) : null}
                 {!notification.readAt ? (
-                  <Button
-                    variant="quiet"
-                    size="sm"
-                    type="button"
-                    onClick={() => void markRead(notification)}
-                    aria-label={`Mark ${notification.title} as read`}
-                  >
+                  <Button variant="quiet" size="sm" type="button" onClick={() => void markRead(notification)} aria-label={`Mark ${notification.title} as read`}>
                     <CheckCheck size={17} />
                   </Button>
                 ) : null}
-                <Button
-                  variant="quiet"
-                  size="sm"
-                  type="button"
-                  onClick={() => void remove(notification)}
-                  aria-label={`Delete ${notification.title}`}
-                >
+                <Button variant="quiet" size="sm" type="button" onClick={() => void remove(notification)} aria-label={`Delete ${notification.title}`}>
                   <Trash2 size={17} />
                 </Button>
               </div>
