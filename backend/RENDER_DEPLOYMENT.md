@@ -3,10 +3,10 @@
 Render service: `flowline-manufacturing-api`
 
 - Root directory: `backend`
-- Build command: `npm ci --include=dev && npm run build`
+- Build command: `npm ci --include=dev && npm run typecheck && npm test && npm run build`
 - Start command: `npm start`
 - Health check: `/health`
-- Auto-deploy: after CI checks pass
+- Auto-deploy: on commit; Render repeats backend validation before publishing
 
 Production health endpoints:
 

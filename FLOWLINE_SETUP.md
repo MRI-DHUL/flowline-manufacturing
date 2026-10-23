@@ -597,4 +597,4 @@ Workflow files:
 .github/workflows/production-smoke.yml
 ```
 
-Both Render services should use **After CI Checks Pass** auto-deploy. After CI succeeds on `main`, Render builds the connected commit. The Production Smoke workflow runs every 15 minutes and can be started manually; it resolves the latest `main` SHA, waits until backend `/health` reports that exact commit, then checks the database connection, frontend root, and a direct SPA route. Keeping smoke checks scheduled avoids a circular dependency where Render waits for a smoke check that is itself waiting for Render.
+Both Render services use **On Commit** auto-deploy. GitHub CI validates every push, and each Render build repeats the relevant lint/typecheck/tests before publishing, so a failing service build cannot replace the live deployment. The Production Smoke workflow runs every 15 minutes and can be started manually; it resolves the latest `main` SHA, waits until backend `/health` reports that exact commit, then checks the database connection, frontend root, and a direct SPA route.

@@ -3,10 +3,10 @@ services:
     name: flowline-manufacturing-api
     runtime: node
     rootDir: backend
-    buildCommand: npm ci --include=dev && npm run build
+    buildCommand: npm ci --include=dev && npm run typecheck && npm test && npm run build
     startCommand: npm start
     healthCheckPath: /health
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
         value: production
@@ -26,9 +26,9 @@ services:
     name: flowline-manufacturing-ui
     runtime: static
     rootDir: frontend
-    buildCommand: npm ci --include=dev && npm run build
+    buildCommand: npm ci --include=dev && npm run lint && npm test && npm run build
     staticPublishPath: ./dist
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     envVars:
       - key: VITE_API_BASE_URL
         value: https://flowline-manufacturing-api.onrender.com
