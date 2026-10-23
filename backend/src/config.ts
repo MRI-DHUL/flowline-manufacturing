@@ -2,10 +2,11 @@ import 'dotenv/config'
 import { z } from 'zod'
 
 const developmentJwtSecret = 'flowline-development-jwt-secret-change-me-32chars'
+const defaultHost = process.env.RENDER ? '0.0.0.0' : '127.0.0.1'
 
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  HOST: z.string().min(1).default('127.0.0.1'),
+  HOST: z.string().min(1).default(defaultHost),
   PORT: z.coerce.number().int().positive().max(65535).default(3000),
   FRONTEND_ORIGIN: z.url().default('http://127.0.0.1:5173'),
   DATABASE_URL: z.string().min(1),
