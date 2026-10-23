@@ -115,6 +115,21 @@ describe('authentication routes', () => {
     expect(response.body).not.toContain('opaque-session-token')
   })
 
+  it('allows secure production sessions across separate frontend and API hosts', async () => {
+    const options = createAppOptions()
+    const app = buildApp({ ...options, secureCookies: true })
+    apps.push(app)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: 'asha@example.com', password: 'secure-pass' },
+    })
+
+    expect(response.headers['set-cookie']).toContain('SameSite=None')
+    expect(response.headers['set-cookie']).toContain('Secure')
+  })
+
   it('rejects invalid request payloads before calling the auth service', async () => {
     const authService = createAuthService()
     const app = buildApp(createAppOptions(authService))

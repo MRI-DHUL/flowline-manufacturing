@@ -535,7 +535,7 @@ Never edit a migration that is already applied.
 - Never expose DATABASE_URL to the frontend.
 - Passwords are stored as Argon2id hashes.
 - Sessions use HTTP-only cookies.
-- Session cookies use `SameSite=Lax` and become `Secure` in production.
+- Session cookies use `SameSite=Lax` locally and `SameSite=None; Secure` in production so separately hosted frontend and API origins can share authenticated sessions.
 - Role permissions are enforced by the backend, not only by UI visibility.
 - The administrator Order Monitor is a backend-authorized `GET` endpoint with no order mutation route.
 - Login and registration are rate limited. Helmet response headers and credentialed CORS origin restrictions are enabled.

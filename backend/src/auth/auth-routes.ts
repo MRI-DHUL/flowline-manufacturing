@@ -56,7 +56,7 @@ export function registerAuthRoutes(app: FastifyInstance, authService: AuthServic
       const maxAge = Math.max(0, Math.floor((result.expiresAt.getTime() - Date.now()) / 1000))
       reply.setCookie(sessionCookieName, result.sessionToken, {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: secureCookies ? 'none' : 'lax',
         secure: secureCookies,
         path: '/',
         maxAge,
