@@ -1,0 +1,49 @@
+name: Production Smoke
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Verify production
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for backend health
+        shell: bash
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error --max-time 20 \
+              https://flowline-manufacturing-api.onrender.com/health \
+              | grep --quiet '"status":"ok"'; then
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Backend health check did not become ready." >&2
+          exit 1
+      - name: Verify database health
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --max-time 30 \
+            https://flowline-manufacturing-api.onrender.com/api/v1/health/database \
+            | grep --quiet '"schemaReady":true'
+      - name: Verify frontend and SPA routes
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --max-time 30 \
+            https://flowline-manufacturing-ui.onrender.com/login \
+            | grep --quiet '<div id="root">'
+          curl --fail --silent --show-error --max-time 30 \
+            https://flowline-manufacturing-ui.onrender.com/dashboard/order-monitor \
+            | grep --quiet '<div id="root">'

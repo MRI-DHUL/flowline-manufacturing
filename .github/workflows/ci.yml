@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install dependencies
+        run: npm ci --include=dev
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci --include=dev
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: https://flowline-manufacturing-api.onrender.com
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  database:
+    name: Database
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: database
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: database/package-lock.json
+      - name: Install dependencies
+        run: npm ci --include=dev
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test migration files
+        run: npm test
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high

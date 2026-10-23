@@ -581,3 +581,20 @@ Host: 0.0.0.0
 ```
 
 Render injects `PORT`; do not hardcode it. After deployment, verify both `/health` and `/api/v1/health/database`.
+
+## 16. CI/CD Pipeline
+
+GitHub Actions runs the following checks for pull requests and every push to `main`:
+
+- Backend typecheck, build, tests, and production dependency audit.
+- Frontend lint, tests, production build, and production dependency audit.
+- Database typecheck, migration-file tests, and production dependency audit.
+
+Workflow files:
+
+```text
+.github/workflows/ci.yml
+.github/workflows/production-smoke.yml
+```
+
+Both Render services should use **After CI Checks Pass** auto-deploy. After CI succeeds on `main`, Render builds the connected commit. The Production Smoke workflow checks the backend, database connection, frontend root, and a direct SPA route. It can also be run manually from GitHub Actions.
