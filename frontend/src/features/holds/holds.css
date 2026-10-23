@@ -52,11 +52,17 @@
   background: rgb(28 27 25 / 45%);
 }
 .hold-dialog {
+  display: grid;
   width: min(680px, 100%);
-  max-height: 90vh;
-  overflow: auto;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  color: #1c2938;
   background: var(--surface, #fff);
+  border-radius: 8px;
   box-shadow: 0 20px 60px rgb(0 0 0 / 22%);
+  text-align: left;
 }
 .hold-dialog header {
   padding: 1rem 1.1rem;
@@ -68,7 +74,22 @@
   cursor: pointer;
 }
 .hold-body {
+  min-height: 0;
   padding: 1.1rem;
+  overflow-y: auto;
+}
+.hold-dialog > footer {
+  margin-top: 0;
+  padding: 0.9rem 1.1rem 1rem;
+  flex-wrap: wrap;
+  background: #fff;
+  border-top: 1px solid var(--line, #d9d4cc);
+}
+.hold-dialog > footer .ui-button-danger:disabled {
+  color: #66758a;
+  background: #e7ecf0;
+  border-color: #d2dbe3;
+  opacity: 1;
 }
 @media (max-width: 640px) {
   .hold-form-grid {

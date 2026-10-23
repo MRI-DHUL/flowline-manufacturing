@@ -58,7 +58,7 @@
 }
 
 .workflow-main {
-  animation: workflow-rise-in 420ms ease both;
+  animation: workflow-main-in 420ms ease;
 }
 
 .workflow-page-heading h1 {
@@ -126,6 +126,11 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes workflow-main-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes workflow-pulse {

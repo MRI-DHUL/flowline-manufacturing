@@ -12,11 +12,14 @@
 }
 .report-issue-dialog {
   width: min(520px, 100%);
-  overflow: hidden;
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   background: #fff;
   border: 1px solid #cbd6e1;
   border-radius: 8px;
   box-shadow: 0 24px 70px rgba(7, 25, 43, 0.3);
+  text-align: left;
 }
 .report-issue-dialog > header {
   display: flex;
@@ -122,6 +125,7 @@
   }
   .report-issue-dialog {
     max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
     overflow-y: auto;
   }
   .report-issue-dialog > footer {

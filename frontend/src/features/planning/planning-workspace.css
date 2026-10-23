@@ -31,13 +31,17 @@
   gap: 5px;
   text-align: right;
 }
-.planning-detail-header .planning-detail-header-actions {
+.planning-detail-header > div.planning-detail-header-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
 }
 .planning-detail-header-actions > span {
   display: grid;
+  flex-basis: 100%;
+  justify-items: end;
   gap: 5px;
 }
 .planning-detail-header small {
@@ -260,6 +264,12 @@
   }
   .planning-detail-header > div:last-child {
     text-align: left;
+  }
+  .planning-detail-header > div.planning-detail-header-actions {
+    justify-content: flex-start;
+  }
+  .planning-detail-header-actions > span {
+    justify-items: start;
   }
   .planning-spec-grid,
   .planning-review-summary dl,

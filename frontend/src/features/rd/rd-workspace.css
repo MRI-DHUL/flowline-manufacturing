@@ -65,7 +65,9 @@
 }
 .rd-detail-header-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
 }
 .rd-detail-content {
@@ -210,6 +212,10 @@
 @media (max-width: 620px) {
   .rd-detail-header {
     flex-direction: column;
+  }
+  .rd-detail-header-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
   .rd-spec-grid,
   .rd-decision-grid {

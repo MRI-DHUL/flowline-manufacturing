@@ -28,6 +28,8 @@
 }
 .shipping-header-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
 }
 .shipping-detail-content {
@@ -164,7 +166,7 @@
     display: grid;
   }
   .shipping-header-actions {
-    flex-wrap: wrap;
+    justify-content: flex-start;
   }
   .shipping-summary,
   .shipping-grid,

@@ -4,3 +4,30 @@
 @import './workflow-dashboard-detail.css';
 @import './workflow-dashboard-overview.css';
 @import './workflow-dashboard-motion.css';
+
+.workflow-main,
+.workflow-sidebar,
+.workflow-notification-panel ul,
+.workflow-stage-track,
+.ui-table-wrap,
+.csr-inline-status-detail ol,
+.admin-order-monitor-rows,
+.hold-body,
+.report-issue-dialog {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.workflow-main::-webkit-scrollbar,
+.workflow-sidebar::-webkit-scrollbar,
+.workflow-notification-panel ul::-webkit-scrollbar,
+.workflow-stage-track::-webkit-scrollbar,
+.ui-table-wrap::-webkit-scrollbar,
+.csr-inline-status-detail ol::-webkit-scrollbar,
+.admin-order-monitor-rows::-webkit-scrollbar,
+.hold-body::-webkit-scrollbar,
+.report-issue-dialog::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
+}
