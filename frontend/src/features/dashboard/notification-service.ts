@@ -57,6 +57,7 @@ export function openNotificationStream(onNotification: (notification: DashboardN
   const websocketUrl = apiUrl.replace(/\/$/, '').replace(/^http/, 'ws')
   const socket = new WebSocket(`${websocketUrl}/api/v1/notifications/live`)
   let disconnected = false
+  let closeRequested = false
   const handleDisconnect = () => {
     if (disconnected) return
     disconnected = true
@@ -77,5 +78,11 @@ export function openNotificationStream(onNotification: (notification: DashboardN
   })
   socket.addEventListener('close', handleDisconnect)
   socket.addEventListener('error', handleDisconnect)
-  return () => socket.close()
+  socket.addEventListener('open', () => {
+    if (closeRequested) socket.close()
+  })
+  return () => {
+    closeRequested = true
+    if (socket.readyState === WebSocket.OPEN) socket.close()
+  }
 }

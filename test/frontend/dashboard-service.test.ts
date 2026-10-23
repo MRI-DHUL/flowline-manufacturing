@@ -18,7 +18,8 @@ describe('dashboard service', () => {
         roles: ['CSR'],
       },
       role: 'CSR',
-      metrics: { active: 0, attention: 0, aging: 0, completed: 0 },
+      metrics: { total: 0, active: 0, attention: 0, aging: 0, completed: 0, inProduction: 0 },
+      analytics: { stages: [], statuses: [], trend: [], delivery: { delivered: 0, onHold: 0, openIssues: 0, weekStart: '2026-10-18', weekEnd: '2026-10-24' } },
       orders: [],
     }
     const fetchMock = vi.fn().mockResolvedValue(

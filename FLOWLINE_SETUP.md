@@ -21,6 +21,8 @@ The application tracks:
 - Manager delivery confirmation.
 - Holds, notifications, audit history, and role permissions.
 - System Administrator account activation and role assignment.
+- Role-scoped operational analytics with a Sunday-Saturday reporting window.
+- A System Administrator read-only Order Monitor for every order and its latest shipment details.
 
 ## 2. Architecture
 
@@ -381,8 +383,25 @@ CSR does not use the generic `Report issue` escalation action because CSR is the
 - Disable users.
 - Assign workflow roles.
 - The administrator cannot disable their own active account.
+- Open `Order monitor` to search every order and inspect its status, stage, owner, delivery dates, and shipment details.
+- The Order Monitor is read-only. Workflow changes remain available only to the assigned operational role.
 
-## 9. End-to-End UI Acceptance Flow
+## 9. Dashboard And Administration Reporting
+
+Every role has an Overview dashboard with role-scoped operational reporting:
+
+- Orders by stage and status.
+- New order trend for the current Sunday-Saturday calendar week.
+- Delivery Completion Pulse with delivered, on-hold, and open-issue counts.
+
+The visibility model is enforced by the backend:
+
+- CSR sees orders they created.
+- R&D, Planning, Press, and Shipping see orders assigned to their active stage.
+- Manager sees assigned delivery handoffs and their confirmed deliveries in completion reporting.
+- System Administrator sees organization-wide reporting and the read-only Order Monitor.
+
+## 10. End-to-End UI Acceptance Flow
 
 Use one active account from each role.
 
@@ -407,7 +426,7 @@ Use one active account from each role.
 19. Confirm delivered.
 20. Verify the Manager queue clears and the order status is `Delivered`.
 
-## 10. Useful Commands
+## 11. Useful Commands
 
 ### Backend
 
@@ -450,12 +469,13 @@ npm run build
 npm test
 
 Set-Location ..\database
+npm run typecheck
 npm test
 npm run migrate:status
 npm run health
 ```
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 ### Frontend port is already in use
 
@@ -483,6 +503,15 @@ A System Administrator must activate the account and assign a role.
 
 A Shipping user must select that specific Manager during escalation. The order must have status `Manager Review` and the selected Manager must be active.
 
+### Dashboard cannot load or notifications are unavailable
+
+Confirm the backend is running on the configured `VITE_API_BASE_URL`, normally `http://127.0.0.1:3000`:
+
+```powershell
+Set-Location backend
+npm run dev
+```
+
 ### Press action returns an empty JSON body error
 
 Use the current frontend build. Empty-body actions must not send `Content-Type: application/json` without a request body.
@@ -499,29 +528,34 @@ npm run migrate:status
 
 Never edit a migration that is already applied.
 
-## 12. Security Notes
+## 13. Security Notes
 
 - Demo credentials are for local development only.
 - Never commit `.env` files.
 - Never expose DATABASE_URL to the frontend.
 - Passwords are stored as Argon2id hashes.
 - Sessions use HTTP-only cookies.
+- Session cookies use `SameSite=Lax` and become `Secure` in production.
 - Role permissions are enforced by the backend, not only by UI visibility.
+- The administrator Order Monitor is a backend-authorized `GET` endpoint with no order mutation route.
+- Login and registration are rate limited. Helmet response headers and credentialed CORS origin restrictions are enabled.
 - Audit events are append-only.
 - Replace all demo passwords before deploying.
 - Replace `JWT_SECRET` with a unique secret before deploying. Production startup rejects the development fallback.
 - Every backend response includes `x-request-id` for log correlation and production troubleshooting.
 - For key rotation, set `JWT_SECRETS` to a comma-separated list with the newest signing key first and previous keys after it. Remove retired keys after active sessions expire.
 
-## 13. Current Verification Baseline
+## 14. Current Verification Baseline
 
 The verified baseline includes:
 
 - Backend typecheck passing.
-- Backend test suite passing.
+- Backend test suite passing: 53 tests.
 - Frontend build passing.
-- Frontend test suite passing.
-- Database tests passing.
+- Frontend test suite passing: 24 tests.
+- Database tests and typecheck passing: 2 tests.
 - Migrations 001 through 011 applied.
 - Database health passing.
 - Browser-verified end-to-end order flow from CSR creation through Manager delivery.
+- Browser-verified System Administrator Order Monitor with read-only order and shipment detail.
+- Production dependency audits report no known vulnerabilities for backend, frontend, or database packages.

@@ -145,6 +145,8 @@ Neon is the selected database hosting platform; this does not mean the frontend 
 -   Notifications and urgent hold alerts.
 -   Work queues, search, filtering, ageing indicators, and manager
     overview.
+-   System Administrator user access management and a read-only
+    organization-wide order monitor.
 -   Input validation and stage-gate controls.
 -   Auditability of key workflow actions.
 
@@ -215,6 +217,13 @@ integrations. - Advanced analytics or predictive scheduling.
 **Decision required:** Confirm whether Requestor and CSR are the same
 role. The prototype includes a Manager view; the action plan lists five
 operational roles plus Manager/Supervisor.
+
+### 7.1 System Administrator Order Monitoring
+
+System Administrators can inspect all orders, including current status,
+stage, ownership, requested delivery date, and latest shipment/delivery
+details. This monitoring view is read-only: only the assigned workflow
+role can perform stage transitions or operational updates.
 
 ## 8. End-to-End Business Workflow
 

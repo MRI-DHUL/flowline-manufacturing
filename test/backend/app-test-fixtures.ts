@@ -13,6 +13,7 @@ import type { PlanningService } from '../../backend/src/planning/planning-servic
 import type { IssueService } from '../../backend/src/issues/issue-service.js'
 import type { PressService } from '../../backend/src/press/press-service.js'
 import type { ShippingService } from '../../backend/src/shipping/shipping-service.js'
+import type { AdminOrder, AdminService, AdminUser } from '../../backend/src/admin/admin-service.js'
 
 export const apps: ReturnType<typeof buildApp>[] = []
 
@@ -197,6 +198,42 @@ export function createShippingService(): ShippingService {
   }
 }
 
+export const adminOrder: AdminOrder = {
+  id: '99999999-9999-4999-8999-999999999999',
+  orderNumber: 'FO-2026-001006',
+  customerName: 'UI Acceptance Client',
+  productName: 'UI Acceptance Pouch',
+  status: 'Delivered',
+  stage: 'Delivered',
+  priority: 'Normal',
+  owner: 'Devendra Rao',
+  requestedDeliveryDate: '2026-11-15',
+  createdAt: '2026-10-22T10:00:00.000Z',
+  updatedAt: '2026-10-23T10:00:00.000Z',
+  shipmentStatus: 'DELIVERED',
+  carrier: 'Flowline Logistics',
+  trackingOrVehicleNumber: 'TRK-UI-1006',
+  expectedDeliveryAt: '2026-11-14T12:00:00.000Z',
+  actualDeliveryAt: '2026-11-15T12:00:00.000Z',
+  receivedBy: 'Client representative',
+}
+
+const adminUser: AdminUser = {
+  authUserId: 'admin-user-1',
+  displayName: 'System Administrator',
+  email: 'admin@flowline.com',
+  status: 'ACTIVE',
+  roles: ['SYSTEM_ADMIN'],
+}
+
+export function createAdminService(): AdminService {
+  return {
+    listUsers: vi.fn(async () => [adminUser]),
+    listOrders: vi.fn(async () => [adminOrder]),
+    updateUser: vi.fn(async () => adminUser),
+  }
+}
+
 export function createAppOptions(authService = createAuthService()) {
   return {
     frontendOrigin: 'http://127.0.0.1:5173',
@@ -211,6 +248,7 @@ export function createAppOptions(authService = createAuthService()) {
     issueService: createIssueService(),
     pressService: createPressService(),
     shippingService: createShippingService(),
+    adminService: createAdminService(),
     databaseCheck: async () => ({
       database: 'neondb',
       serverTime: new Date(),
