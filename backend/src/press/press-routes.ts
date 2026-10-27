@@ -15,9 +15,8 @@ const issueSchema = z.object({
 const reworkSchema = z.object({ action: z.enum(['RESUME', 'REVIEW']), resolution: z.string().trim().min(10).max(3000) })
 const completionSchema = z.object({
   goodQuantity: z.number().positive(),
-  wasteQuantity: z.number().nonnegative(),
+  wasteQuantity: z.number().nonnegative().optional().default(0),
   notes: z.string().max(3000).nullable().optional(),
-  shippingUserAuthUserId: z.uuid(),
 })
 
 async function authenticatedUser(request: { cookies: Record<string, string | undefined> }, reply: FastifyReply, authService: AuthService): Promise<AuthUser | null> {

@@ -72,14 +72,13 @@ describe('R&D routes', () => {
       cookies: { flowline_session: 'opaque-token' },
       payload: {
         decision: 'CLARIFICATION_REQUESTED',
-        planningUserAuthUserId: '',
         technicalComments: 'Need more details.',
         clarificationQuestion: 'Please confirm the material specification.',
       },
     })
 
     expect(response.statusCode).toBe(200)
-    expect(rdService.decide).toHaveBeenCalledWith(expect.objectContaining({ id: 'rd-user-1' }), testOrder.id, expect.objectContaining({ planningUserAuthUserId: null }))
+    expect(rdService.decide).toHaveBeenCalledWith(expect.objectContaining({ id: 'rd-user-1' }), testOrder.id, expect.objectContaining({ decision: 'CLARIFICATION_REQUESTED' }))
   })
 })
 
@@ -135,12 +134,11 @@ describe('Planning routes', () => {
         capacityStatus: 'AVAILABLE',
         readinessStatus: 'READY',
         planningNotes: 'Ready for production.',
-        pressUserAuthUserId: pressUserId,
       },
     })
 
     expect(response.statusCode).toBe(200)
-    expect(planningService.release).toHaveBeenCalledWith(expect.objectContaining({ id: 'planner-1' }), testOrder.id, expect.objectContaining({ productionLineId, pressUserAuthUserId: pressUserId }))
+    expect(planningService.release).toHaveBeenCalledWith(expect.objectContaining({ id: 'planner-1' }), testOrder.id, expect.objectContaining({ productionLineId }))
   })
 })
 
@@ -229,17 +227,16 @@ describe('Press routes', () => {
     pressService.complete = vi.fn(async () => null as never)
     const app = buildApp({ ...createAppOptions(authService), pressService })
     apps.push(app)
-    const shippingUserAuthUserId = '66666666-6666-4666-8666-666666666666'
 
     const response = await app.inject({
       method: 'POST',
       url: `/api/v1/press/orders/${testOrder.id}/complete`,
       cookies: { flowline_session: 'opaque-token' },
-      payload: { goodQuantity: 950, wasteQuantity: 50, notes: 'Production completed.', shippingUserAuthUserId },
+      payload: { goodQuantity: 950, wasteQuantity: 50, notes: 'Production completed.' },
     })
 
     expect(response.statusCode).toBe(200)
-    expect(pressService.complete).toHaveBeenCalledWith(expect.objectContaining({ id: 'press-user-1' }), testOrder.id, expect.objectContaining({ goodQuantity: 950, wasteQuantity: 50, shippingUserAuthUserId }))
+    expect(pressService.complete).toHaveBeenCalledWith(expect.objectContaining({ id: 'press-user-1' }), testOrder.id, expect.objectContaining({ goodQuantity: 950 }))
   })
 })
 

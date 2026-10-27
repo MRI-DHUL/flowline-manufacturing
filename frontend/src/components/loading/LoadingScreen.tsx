@@ -2,13 +2,13 @@ import './loading-screen.css'
 
 export function LoadingScreen() {
   return (
-    <main className="flowline-loading-screen" aria-busy="true" aria-label="Loading Flowline workspace">
+    <main className="flowline-loading-screen" aria-busy="true" aria-label="Loading 5Star workspace">
       <div className="flowline-loading-brand">
         <div className="flowline-loading-mark">
-          <img src="/flowline-mark.svg" alt="" />
+          <img src="/5star-mark.svg" alt="" />
         </div>
         <div>
-          <strong>Flowline</strong>
+          <strong>5Star</strong>
           <span>Manufacturing orders</span>
         </div>
       </div>

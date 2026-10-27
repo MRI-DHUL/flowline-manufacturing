@@ -63,7 +63,6 @@ export type RdOrderDetail = RdOrderSummary & {
 
 export type RdDecisionInput = {
   decision: 'APPROVED' | 'CLARIFICATION_REQUESTED' | 'REJECTED' | 'ON_HOLD'
-  planningUserAuthUserId?: string | null
   technicalComments: string
   toolingRequirements?: string | null
   materialRecommendation?: string | null
@@ -175,7 +174,18 @@ export class PostgresRdService implements RdService {
     ensureRd(user)
     const result = await this.pool.query<OrderRow>(
       `${orderSelect}
-       WHERE orders.owner_auth_user_id = $1
+       WHERE orders.owner_role_id = (
+           SELECT role.id FROM flowline.roles AS role WHERE role.code = 'R&D'
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM flowline.user_profiles AS profile
+           JOIN flowline.user_roles AS user_role ON user_role.user_profile_id = profile.id
+           JOIN flowline.roles AS role ON role.id = user_role.role_id
+           WHERE profile.auth_user_id = $1
+             AND profile.status = 'ACTIVE'
+             AND role.code = 'R&D'
+         )
          AND orders.stage = 'R&D'
          AND orders.status IN ('R&D Review', 'On Hold')
        GROUP BY orders.id
@@ -235,7 +245,18 @@ export class PostgresRdService implements RdService {
       `${orderSelect}
        WHERE orders.id = $1
          AND (
-           orders.owner_auth_user_id = $2
+           orders.owner_role_id = (
+             SELECT role.id FROM flowline.roles AS role WHERE role.code = 'R&D'
+           )
+           AND EXISTS (
+             SELECT 1
+             FROM flowline.user_profiles AS profile
+             JOIN flowline.user_roles AS user_role ON user_role.user_profile_id = profile.id
+             JOIN flowline.roles AS role ON role.id = user_role.role_id
+             WHERE profile.auth_user_id = $2
+               AND profile.status = 'ACTIVE'
+               AND role.code = 'R&D'
+           )
            OR EXISTS (
              SELECT 1 FROM flowline.technical_reviews AS prior_review
              WHERE prior_review.order_id = orders.id
@@ -359,7 +380,17 @@ export class PostgresRdService implements RdService {
       const orderResult = await client.query<OrderRow>(
         `SELECT orders.*, '0'::text AS open_clarifications
          FROM flowline.orders
-         WHERE orders.id = $1 AND orders.owner_auth_user_id = $2
+         WHERE orders.id = $1
+           AND orders.owner_role_id = (SELECT role.id FROM flowline.roles AS role WHERE role.code = 'R&D')
+           AND EXISTS (
+             SELECT 1
+             FROM flowline.user_profiles AS profile
+             JOIN flowline.user_roles AS user_role ON user_role.user_profile_id = profile.id
+             JOIN flowline.roles AS role ON role.id = user_role.role_id
+             WHERE profile.auth_user_id = $2
+               AND profile.status = 'ACTIVE'
+               AND role.code = 'R&D'
+           )
            AND orders.stage = 'R&D' AND orders.status = 'R&D Review'
          FOR UPDATE`,
         [orderId, user.id],
@@ -372,27 +403,11 @@ export class PostgresRdService implements RdService {
       if (input.decision === 'CLARIFICATION_REQUESTED' && !input.clarificationQuestion?.trim()) {
         throw new RdError(422, 'DECISION_INCOMPLETE', 'A clarification question is required.', ['clarificationQuestion'])
       }
-      if (input.decision === 'APPROVED' && !input.planningUserAuthUserId) {
-        throw new RdError(422, 'DECISION_INCOMPLETE', 'Select an active Planning user.', ['planningUserAuthUserId'])
-      }
 
       const nextStatus = input.decision === 'APPROVED' ? 'Planning Review' : input.decision === 'REJECTED' ? 'Cancelled' : input.decision === 'ON_HOLD' ? 'On Hold' : 'R&D Review'
       const nextStage = input.decision === 'APPROVED' ? 'Planning' : 'CSR'
       const planningRole = input.decision === 'APPROVED' ? await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'PLANNING'`) : null
       const csrRole = input.decision !== 'APPROVED' ? await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'CSR'`) : null
-      if (input.decision === 'APPROVED') {
-        const planner = await client.query<{ auth_user_id: string }>(
-          `SELECT profile.auth_user_id
-           FROM flowline.user_profiles AS profile
-           JOIN flowline.user_roles AS user_role ON user_role.user_profile_id = profile.id
-           JOIN flowline.roles AS role ON role.id = user_role.role_id
-           WHERE profile.auth_user_id = $1
-             AND profile.status = 'ACTIVE'
-             AND role.code = 'PLANNING'`,
-          [input.planningUserAuthUserId],
-        )
-        if (!planner.rows[0]) throw new RdError(422, 'INVALID_PLANNER', 'Select an active Planning user.', ['planningUserAuthUserId'])
-      }
       await client.query(
         `INSERT INTO flowline.technical_reviews (
            order_id, reviewer_auth_user_id, decision, technical_comments,
@@ -405,7 +420,7 @@ export class PostgresRdService implements RdService {
          SET status = $2, stage = $3,
              owner_role_id = $4, owner_auth_user_id = $5, version = version + 1
          WHERE id = $1`,
-        [orderId, nextStatus, nextStage, planningRole?.rows[0]?.id ?? csrRole?.rows[0]?.id ?? null, input.decision === 'APPROVED' ? input.planningUserAuthUserId : order.created_by_auth_user_id],
+        [orderId, nextStatus, nextStage, planningRole?.rows[0]?.id ?? csrRole?.rows[0]?.id ?? null, input.decision === 'APPROVED' ? null : order.created_by_auth_user_id],
       )
       if (input.decision === 'CLARIFICATION_REQUESTED') {
         await client.query(
@@ -422,8 +437,8 @@ export class PostgresRdService implements RdService {
         [orderId, user.id, `RD_${input.decision}`, order.status, nextStatus, comments, input.decision],
       )
 
-      const recipientUserId = input.decision === 'APPROVED' ? (input.planningUserAuthUserId ?? null) : order.created_by_auth_user_id
-      const recipientRoleId = null
+      const recipientUserId = input.decision === 'APPROVED' ? null : order.created_by_auth_user_id
+      const recipientRoleId = input.decision === 'APPROVED' ? planningRole?.rows[0]?.id ?? null : null
       const notificationResult = await client.query<{ id: string }>(
         `WITH notification AS (
            INSERT INTO flowline.notifications (order_id, type, title, message)
@@ -490,7 +505,8 @@ export class PostgresRdService implements RdService {
        FROM flowline.attachments AS attachment
        JOIN flowline.orders AS orders ON orders.id = attachment.order_id
        WHERE attachment.id = $1 AND orders.id = $2
-         AND orders.owner_auth_user_id = $3 AND orders.stage = 'R&D'`,
+         AND orders.owner_role_id = (SELECT role.id FROM flowline.roles AS role WHERE role.code = 'R&D')
+         AND orders.stage = 'R&D'`,
       [attachmentId, orderId, user.id],
     )
     const attachment = result.rows[0]

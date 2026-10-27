@@ -52,12 +52,11 @@ describe('Planning service gates', () => {
         plannedProductionDate: null,
         capacityStatus: 'UNAVAILABLE',
         readinessStatus: 'BLOCKED',
-        pressUserAuthUserId: null,
       }),
     ).rejects.toEqual(
       expect.objectContaining<Partial<PlanningError>>({
         code: 'RELEASE_BLOCKED',
-        fields: expect.arrayContaining(['materialStatus', 'productionLineId', 'plannedProductionDate', 'capacityStatus', 'readinessStatus', 'pressUserAuthUserId']),
+        fields: expect.arrayContaining(['materialStatus', 'productionLineId', 'plannedProductionDate', 'capacityStatus', 'readinessStatus']),
       }),
     )
     expect(pool.connect).not.toHaveBeenCalled()

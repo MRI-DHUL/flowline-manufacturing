@@ -1,9 +1,9 @@
 import { ArrowLeft, Save, Send, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useToast } from '../../components/toast/useToast'
 import { Button, DatePicker, FileUpload, FormField, Select, TextArea, TextInput } from '../../components/ui'
-import { assignCsrRdReviewer, createCsrDraft, listRdReviewers, CsrRequestError, deleteCsrAttachment, downloadCsrAttachment, submitCsrOrder, updateCsrDraft, uploadCsrAttachment } from './csr-order-service'
-import type { CsrOrderDetail, CsrReviewer, OrderPatch } from './csr-order-service'
+import { createCsrDraft, CsrRequestError, deleteCsrAttachment, downloadCsrAttachment, submitCsrOrder, updateCsrDraft, uploadCsrAttachment } from './csr-order-service'
+import type { CsrOrderDetail, OrderPatch } from './csr-order-service'
 
 type FormValues = {
   customerName: string
@@ -19,10 +19,9 @@ type FormValues = {
   requestedDeliveryDate: string
   technicalNotes: string
   priority: 'Normal' | 'High'
-  assignedReviewerAuthUserId: string
 }
 
-const requiredFields = ['customerName', 'productName', 'packagingType', 'material', 'requestedQuantity', 'requestedDeliveryDate', 'assignedReviewerAuthUserId'] as const
+const requiredFields = ['customerName', 'productName', 'packagingType', 'material', 'requestedQuantity', 'requestedDeliveryDate'] as const
 
 function initialValues(order?: CsrOrderDetail | null): FormValues {
   return {
@@ -39,15 +38,12 @@ function initialValues(order?: CsrOrderDetail | null): FormValues {
     requestedDeliveryDate: order?.requestedDeliveryDate ?? '',
     technicalNotes: order?.technicalNotes ?? '',
     priority: order?.priority === 'High' ? 'High' : 'Normal',
-    assignedReviewerAuthUserId: order?.assignedReviewer?.authUserId ?? '',
   }
 }
 
 function toPatch(values: FormValues): OrderPatch {
-  const { assignedReviewerAuthUserId: _assignedReviewerAuthUserId, ...orderValues } = values
-  void _assignedReviewerAuthUserId
   return {
-    ...orderValues,
+    ...values,
     requestedQuantity: values.requestedQuantity ? Number(values.requestedQuantity) : null,
   }
 }
@@ -59,28 +55,6 @@ export function CsrOrderForm({ order, onComplete, onCancel }: { order?: CsrOrder
   const [fieldErrors, setFieldErrors] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [currentOrder, setCurrentOrder] = useState(order ?? null)
-  const [reviewers, setReviewers] = useState<CsrReviewer[]>([])
-
-  useEffect(() => {
-    let cancelled = false
-    listRdReviewers()
-      .then((items) => {
-        if (!cancelled) setReviewers(items)
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          showToast({
-            title: 'R&D reviewers unavailable',
-            message: error instanceof Error ? error.message : undefined,
-            tone: 'error',
-          })
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [showToast])
-
   function update<K extends keyof FormValues>(field: K, value: FormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }))
     setFieldErrors((current) => current.filter((item) => item !== field))
@@ -116,9 +90,6 @@ export function CsrOrderForm({ order, onComplete, onCancel }: { order?: CsrOrder
       let saved = currentOrder ? await updateCsrDraft(currentOrder.id, toPatch(values)) : await createCsrDraft(toPatch(values))
       for (const file of files) {
         saved = await uploadCsrAttachment(saved.id, file)
-      }
-      if (values.assignedReviewerAuthUserId && saved.assignedReviewer?.authUserId !== values.assignedReviewerAuthUserId) {
-        saved = await assignCsrRdReviewer(saved.id, values.assignedReviewerAuthUserId)
       }
       setCurrentOrder(saved)
       setFiles([])
@@ -268,18 +239,6 @@ export function CsrOrderForm({ order, onComplete, onCancel }: { order?: CsrOrder
 
         <fieldset disabled={busy}>
           <legend>R&amp;D assignment</legend>
-          <div className="csr-form-grid">
-            <FormField label="R&D reviewer" required className={fieldClass('assignedReviewerAuthUserId')} hint={!reviewers.length ? 'No active R&D reviewers are available.' : undefined}>
-              <Select value={values.assignedReviewerAuthUserId} onChange={(event) => update('assignedReviewerAuthUserId', event.target.value)}>
-                <option value="">Select an active R&amp;D reviewer</option>
-                {reviewers.map((reviewer) => (
-                  <option key={reviewer.authUserId} value={reviewer.authUserId}>
-                    {reviewer.displayName} ({reviewer.email})
-                  </option>
-                ))}
-              </Select>
-            </FormField>
-          </div>
         </fieldset>
 
         <div className="csr-form-actions">

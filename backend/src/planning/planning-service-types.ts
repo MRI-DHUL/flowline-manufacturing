@@ -25,7 +25,6 @@ export type PlanningAssessment = {
   capacityStatus: 'PENDING' | 'AVAILABLE' | 'UNAVAILABLE'
   readinessStatus: 'PENDING' | 'READY' | 'BLOCKED'
   planningNotes: string | null
-  pressUserAuthUserId: string | null
   updatedAt: Date
 }
 
@@ -60,7 +59,6 @@ export type PlanningAssessmentInput = {
   capacityStatus: 'PENDING' | 'AVAILABLE' | 'UNAVAILABLE'
   readinessStatus: 'PENDING' | 'READY' | 'BLOCKED'
   planningNotes?: string | null
-  pressUserAuthUserId?: string | null
 }
 
 export interface PlanningService {

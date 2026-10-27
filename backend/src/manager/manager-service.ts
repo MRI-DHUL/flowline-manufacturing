@@ -50,7 +50,17 @@ const select = `
          shipment.id AS shipment_id, orders.created_by_auth_user_id AS "createdByAuthUserId"
   FROM flowline.orders orders
   JOIN LATERAL (SELECT item.* FROM flowline.shipments item WHERE item.order_id = orders.id ORDER BY item.created_at DESC LIMIT 1) shipment ON true
-  WHERE orders.owner_auth_user_id = $1 AND orders.status IN ('Manager Review', 'Delivered')
+  WHERE orders.status IN ('Manager Review', 'Delivered')
+    AND EXISTS (
+      SELECT 1
+      FROM flowline.user_profiles profile
+      JOIN flowline.user_roles user_role ON user_role.user_profile_id = profile.id
+      JOIN flowline.roles role ON role.id = user_role.role_id
+      WHERE profile.auth_user_id = $1
+        AND profile.status = 'ACTIVE'
+        AND role.code = 'MANAGER'
+        AND orders.owner_role_id = role.id
+    )
 `
 
 type Row = {

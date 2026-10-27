@@ -18,7 +18,6 @@ const assessmentSchema = z.object({
   capacityStatus: z.enum(['PENDING', 'AVAILABLE', 'UNAVAILABLE']),
   readinessStatus: z.enum(['PENDING', 'READY', 'BLOCKED']),
   planningNotes: z.string().max(5000).nullable().optional(),
-  pressUserAuthUserId: optionalUuid,
 })
 
 async function authenticatedUser(request: { cookies: Record<string, string | undefined> }, reply: FastifyReply, authService: AuthService): Promise<AuthUser | null> {

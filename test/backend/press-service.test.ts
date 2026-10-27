@@ -23,13 +23,11 @@ describe('Press service gates', () => {
     await expect(
       service.complete(pressUser, 'order-1', {
         goodQuantity: 0,
-        wasteQuantity: -1,
-        shippingUserAuthUserId: null,
       }),
     ).rejects.toEqual(
       expect.objectContaining<Partial<PressError>>({
         code: 'COMPLETION_INCOMPLETE',
-        fields: ['goodQuantity', 'wasteQuantity', 'shippingUserAuthUserId'],
+        fields: ['goodQuantity'],
       }),
     )
     expect(pool.connect).not.toHaveBeenCalled()

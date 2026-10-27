@@ -96,13 +96,13 @@ export class PostgresPressService implements PressService {
     ensurePress(user)
     const result = await this.pool.query<PressRow>(
       `${pressSelect}
-       WHERE orders.owner_auth_user_id = $1
+      WHERE orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'PRESS')
          AND orders.stage = 'Press'
          AND orders.status IN ('Scheduled', 'In Production', 'On Hold', 'Rework Required')
        ORDER BY CASE orders.priority WHEN 'High' THEN 0 ELSE 1 END,
                 orders.requested_delivery_date, orders.updated_at DESC
        LIMIT 100`,
-      [user.id],
+      [],
     )
     return result.rows.map(toSummary)
   }
@@ -133,7 +133,7 @@ export class PostgresPressService implements PressService {
     const result = await this.pool.query<PressRow>(
       `${pressSelect}
        WHERE orders.id = $1 AND (
-         orders.owner_auth_user_id = $2
+         orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'PRESS')
          OR run.operator_auth_user_id = $2
        )`,
       [orderId, user.id],
@@ -185,7 +185,7 @@ export class PostgresPressService implements PressService {
   private async lockedRun(client: pg.PoolClient, user: AuthUser, orderId: string, allowedRunStatuses: string[]) {
     const result = await client.query<PressRow>(
       `${pressSelect}
-       WHERE orders.id = $1 AND orders.owner_auth_user_id = $2
+      WHERE orders.id = $1 AND orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'PRESS')
          AND orders.stage = 'Press' AND run.operator_auth_user_id = $2
          AND run.status = ANY($3::text[])
        FOR UPDATE OF orders, run`,
@@ -333,7 +333,7 @@ export class PostgresPressService implements PressService {
            WHERE issue.order_id = orders.id AND issue.status = 'OPEN'
            ORDER BY issue.reported_at DESC LIMIT 1
          ) open_issue ON true
-         WHERE orders.id = $1 AND orders.owner_auth_user_id = $2
+         WHERE orders.id = $1 AND orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'PRESS')
            AND orders.stage = 'Press' AND run.operator_auth_user_id = $2
            AND orders.status = 'Rework Required' AND run.status = 'ISSUE'
          FOR UPDATE OF orders, run`,
@@ -391,38 +391,26 @@ export class PostgresPressService implements PressService {
 
   async complete(user: AuthUser, orderId: string, input: PressCompletionInput) {
     ensurePress(user)
+    const wasteQuantity = input.wasteQuantity ?? 0
     const fields: string[] = []
     if (!Number.isFinite(input.goodQuantity) || input.goodQuantity <= 0) fields.push('goodQuantity')
-    if (!Number.isFinite(input.wasteQuantity) || input.wasteQuantity < 0) fields.push('wasteQuantity')
-    if (!input.shippingUserAuthUserId) fields.push('shippingUserAuthUserId')
-    if (fields.length) throw new PressError(422, 'COMPLETION_INCOMPLETE', 'Record good quantity, waste quantity, and the Shipping assignee.', fields)
+    if (fields.length) throw new PressError(422, 'COMPLETION_INCOMPLETE', 'Record good quantity and the Shipping assignee.', fields)
 
     const client = await this.pool.connect()
     try {
       await client.query('BEGIN')
       const row = await this.lockedRun(client, user, orderId, ['IN_PRODUCTION'])
-      if (input.goodQuantity + input.wasteQuantity > Number(row.planned_quantity)) {
-        throw new PressError(422, 'QUANTITY_EXCEEDS_PLAN', 'Good and waste quantities cannot exceed the planned quantity.', ['goodQuantity', 'wasteQuantity'])
+      if (input.goodQuantity + wasteQuantity > Number(row.planned_quantity)) {
+        throw new PressError(422, 'QUANTITY_EXCEEDS_PLAN', 'Good quantity cannot exceed the planned quantity.', ['goodQuantity'])
       }
-      const [shippingUser, shippingRole] = await Promise.all([
-        client.query<{ auth_user_id: string }>(
-          `SELECT profile.auth_user_id
-           FROM flowline.user_profiles profile
-           JOIN flowline.user_roles user_role ON user_role.user_profile_id = profile.id
-           JOIN flowline.roles role ON role.id = user_role.role_id
-           WHERE profile.auth_user_id = $1 AND profile.status = 'ACTIVE' AND role.code = 'SHIPPING'`,
-          [input.shippingUserAuthUserId],
-        ),
-        client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'SHIPPING'`),
-      ])
-      if (!shippingUser.rows[0]) throw new PressError(422, 'INVALID_SHIPPING_USER', 'Select an active Shipping user.', ['shippingUserAuthUserId'])
+      const shippingRole = await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'SHIPPING'`)
 
       await client.query(
         `UPDATE flowline.production_runs
          SET status = 'COMPLETED', good_quantity = $2, waste_quantity = $3,
              completed_at = clock_timestamp(), notes = $4
          WHERE id = $1`,
-        [row.run_id, input.goodQuantity, input.wasteQuantity, input.notes?.trim() || null],
+        [row.run_id, input.goodQuantity, wasteQuantity, input.notes?.trim() || null],
       )
       await client.query(
         `INSERT INTO flowline.shipments (
@@ -435,15 +423,15 @@ export class PostgresPressService implements PressService {
          SET status = 'Ready to Ship', stage = 'Shipping', owner_role_id = $2,
              owner_auth_user_id = $3, version = version + 1
          WHERE id = $1`,
-        [orderId, shippingRole.rows[0]?.id ?? null, input.shippingUserAuthUserId],
+        [orderId, shippingRole.rows[0]?.id ?? null, null],
       )
       await client.query(
         `INSERT INTO flowline.audit_events (
            order_id, actor_auth_user_id, action, previous_status, new_status, reason, details
          ) VALUES ($1, $2, 'PRESS_PRODUCTION_COMPLETED', $3, 'Ready to Ship', $4,
            jsonb_build_object('goodQuantity', $5::numeric, 'wasteQuantity', $6::numeric,
-                              'shippingUserAuthUserId', $7::text))`,
-        [orderId, user.id, row.status, input.notes?.trim() || null, input.goodQuantity, input.wasteQuantity, input.shippingUserAuthUserId],
+                              'shippingRole', 'SHIPPING'))`,
+        [orderId, user.id, row.status, input.notes?.trim() || null, input.goodQuantity, wasteQuantity],
       )
       const notificationResult = await client.query<{
         id: string
@@ -456,23 +444,11 @@ export class PostgresPressService implements PressService {
       const notification = notificationResult.rows[0]
       if (!notification) throw new Error('Notification insert did not return a row')
       await client.query(
-        `INSERT INTO flowline.notification_recipients (notification_id, recipient_auth_user_id)
+        `INSERT INTO flowline.notification_recipients (notification_id, recipient_role_id)
          VALUES ($1, $2)`,
-        [notification.id, input.shippingUserAuthUserId],
+        [notification.id, shippingRole.rows[0]?.id],
       )
       await client.query('COMMIT')
-
-      const item: NotificationItem = {
-        id: notification.id,
-        orderId,
-        orderNumber: row.order_number,
-        type: 'PRESS_COMPLETED',
-        title: `Order ${row.order_number} ready to ship`,
-        message: `Production completed with ${input.goodQuantity} good units.`,
-        createdAt: notification.created_at,
-        readAt: null,
-      }
-      this.notificationPublisher?.publish(input.shippingUserAuthUserId!, item)
       return this.getOrder(user, orderId)
     } catch (error) {
       await client.query('ROLLBACK')

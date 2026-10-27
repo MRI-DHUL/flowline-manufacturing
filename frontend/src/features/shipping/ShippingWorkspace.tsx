@@ -1,7 +1,7 @@
-import { CheckCircle2, CircleAlert, FileCheck2, RefreshCw, Send, Truck } from 'lucide-react'
+import { CheckCircle2, FileCheck2, RefreshCw, Send, Truck } from 'lucide-react'
 import { useDeferredValue, useEffect, useState } from 'react'
 import { useToast } from '../../components/toast/useToast'
-import { Button, Card, FormField, Select, TextArea, TextInput } from '../../components/ui'
+import { Button, Card, FormField, TextInput } from '../../components/ui'
 import { ReportIssueButton } from '../issues/ReportIssueButton'
 import { HoldControls } from '../holds/HoldControls'
 import {
@@ -9,14 +9,11 @@ import {
   dispatchShippingOrder,
   getShippingOrder,
   handoffToManager,
-  listShippingManagerUsers,
   listShippingOrders,
-  reportDeliveryIssue,
   ShippingRequestError,
   uploadDeliveryProof,
   verifyShippingReady,
 } from './shipping-service'
-import type { ManagerUser } from './shipping-service'
 import type { ShippingOrderDetail, ShippingOrderSummary } from './shipping-service'
 import './shipping-workspace.css'
 
@@ -26,7 +23,7 @@ function format(value: string | null) {
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? 'Not set' : fmt.format(date)
 }
-function ShippingDetail({ order, managerUsers, onUpdated, onDelivered }: { order: ShippingOrderDetail; managerUsers: ManagerUser[]; onUpdated: (order: ShippingOrderDetail) => void; onDelivered: (id: string) => void }) {
+function ShippingDetail({ order, onUpdated, onDelivered }: { order: ShippingOrderDetail; onUpdated: (order: ShippingOrderDetail) => void; onDelivered: (id: string) => void }) {
   const { showToast } = useToast()
   const [busy, setBusy] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
@@ -39,8 +36,6 @@ function ShippingDetail({ order, managerUsers, onUpdated, onDelivered }: { order
     expectedDeliveryAt: '',
   })
   const [delivery, setDelivery] = useState({ actualDeliveryAt: '', receivedBy: '' })
-  const [issue, setIssue] = useState({ category: '', notes: '', managerUserAuthUserId: '' })
-  const [managerUserAuthUserId, setManagerUserAuthUserId] = useState('')
   const [proof, setProof] = useState<File | null>(null)
   async function execute(label: string, work: () => Promise<ShippingOrderDetail>, success: string) {
     setBusy(true)
@@ -204,21 +199,10 @@ function ShippingDetail({ order, managerUsers, onUpdated, onDelivered }: { order
                 </FormField>
               </div>
               <div className="shipping-handoff">
-                <FormField label="Manager handoff" required>
-                  <Select value={managerUserAuthUserId} onChange={(e) => setManagerUserAuthUserId(e.target.value)} aria-invalid={errors.includes('managerUserAuthUserId')}>
-                    <option value="">Select Manager</option>
-                    {managerUsers.length ? (
-                      managerUsers.map((user) => (
-                        <option key={user.authUserId} value={user.authUserId}>
-                          {user.displayName} ({user.email})
-                        </option>
-                      ))
-                    ) : (
-                      <option disabled>No active Managers available</option>
-                    )}
-                  </Select>
+                <FormField label="Manager handoff" hint="All active Managers will receive this delivery handoff.">
+                  <span className="shipping-role-handoff">Assign to Manager role</span>
                 </FormField>
-                <Button variant="primary" disabled={busy || !managerUserAuthUserId} onClick={() => void execute('Manager handoff blocked', () => handoffToManager(order.id, managerUserAuthUserId), 'Order handed off to Manager')}>
+                <Button variant="primary" disabled={busy} onClick={() => void execute('Manager handoff blocked', () => handoffToManager(order.id), 'Order handed off to all Managers')}>
                   <Send size={16} />
                   Send to Manager
                 </Button>
@@ -254,39 +238,6 @@ function ShippingDetail({ order, managerUsers, onUpdated, onDelivered }: { order
                 </Button>
               </footer>
             </section>
-            <section className="shipping-panel shipping-issue">
-              <header>
-                <CircleAlert size={19} />
-                <div>
-                  <strong>Escalate to Manager</strong>
-                  <small>Send a failed or delayed delivery to an active Manager for intervention.</small>
-                </div>
-              </header>
-              <div className="shipping-grid">
-                <FormField label="Manager" required>
-                  <Select value={issue.managerUserAuthUserId} onChange={(e) => setIssue((v) => ({ ...v, managerUserAuthUserId: e.target.value }))}>
-                    <option value="">Select Manager</option>
-                    {managerUsers.map((user) => (
-                      <option key={user.authUserId} value={user.authUserId}>
-                        {user.displayName} ({user.email})
-                      </option>
-                    ))}
-                  </Select>
-                </FormField>
-                <FormField label="Escalation category" required>
-                  <TextInput value={issue.category} onChange={(e) => setIssue((v) => ({ ...v, category: e.target.value }))} />
-                </FormField>
-                <FormField label="Escalation details" required className="wide">
-                  <TextArea value={issue.notes} onChange={(e) => setIssue((v) => ({ ...v, notes: e.target.value }))} placeholder="Describe the delivery risk, customer impact, and action needed." />
-                </FormField>
-              </div>
-              <footer>
-                <Button variant="danger" disabled={busy || !issue.managerUserAuthUserId} onClick={() => void execute('Escalation not sent', () => reportDeliveryIssue(order.id, issue), 'Escalated to Manager')}>
-                  <CircleAlert size={16} />
-                  Send to Manager
-                </Button>
-              </footer>
-            </section>
           </>
         ) : null}
         {order.deliveryIssues.length ? (
@@ -308,7 +259,6 @@ function ShippingDetail({ order, managerUsers, onUpdated, onDelivered }: { order
 export function ShippingWorkspace() {
   const { showToast } = useToast()
   const [orders, setOrders] = useState<ShippingOrderSummary[]>([])
-  const [managerUsers, setManagerUsers] = useState<ManagerUser[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [detail, setDetail] = useState<ShippingOrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -317,11 +267,10 @@ export function ShippingWorkspace() {
   const deferred = useDeferredValue(search.trim().toLowerCase())
   useEffect(() => {
     let cancelled = false
-    Promise.all([listShippingOrders(), listShippingManagerUsers()])
-      .then(([items, users]) => {
+    listShippingOrders()
+      .then((items) => {
         if (cancelled) return
         setOrders(items)
-        setManagerUsers(users)
         setSelected(items[0]?.id ?? null)
         if (!items.length) setDetailLoading(false)
       })
@@ -422,7 +371,6 @@ export function ShippingWorkspace() {
         <ShippingDetail
           key={`${detail.id}-${detail.shipmentStatus}`}
           order={detail}
-          managerUsers={managerUsers}
           onUpdated={(updated) => {
             setDetail(updated)
             setOrders((list) => list.map((item) => (item.id === updated.id ? updated : item)))

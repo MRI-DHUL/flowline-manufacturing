@@ -63,7 +63,6 @@ export type RdOrderDetail = RdOrderSummary & {
 
 export type RdDecisionInput = {
   decision: 'APPROVED' | 'CLARIFICATION_REQUESTED' | 'REJECTED' | 'ON_HOLD'
-  planningUserAuthUserId: string
   technicalComments: string
   toolingRequirements: string
   materialRecommendation: string

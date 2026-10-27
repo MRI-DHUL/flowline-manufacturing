@@ -50,7 +50,7 @@ export function LoginPage() {
     <AuthLayout
       eyebrow="Workspace access"
       title="Welcome back"
-      description="Sign in with your approved Flowline account."
+      description="Sign in with your approved 5Star account."
       footer={
         <p>
           Need an account? <Link to="/register">Create one</Link>

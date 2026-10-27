@@ -4,8 +4,8 @@ import { useToast } from '../../components/toast/useToast'
 import { Button, Card, FormField, Select, TextArea, TextInput } from '../../components/ui'
 import { ReportIssueButton } from '../issues/ReportIssueButton'
 import { HoldControls } from '../holds/HoldControls'
-import { downloadRdAttachment, getRdOrder, listPlanningUsers, listRdOrders, RdRequestError, submitRdDecision } from './rd-service'
-import type { PlanningUser, RdDecisionInput, RdOrderDetail, RdOrderSummary } from './rd-service'
+import { downloadRdAttachment, getRdOrder, listRdOrders, RdRequestError, submitRdDecision } from './rd-service'
+import type { RdDecisionInput, RdOrderDetail, RdOrderSummary } from './rd-service'
 import './rd-workspace.css'
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -36,7 +36,6 @@ function statusTone(status: string) {
 
 const emptyDecision: RdDecisionInput = {
   decision: 'APPROVED',
-  planningUserAuthUserId: '',
   technicalComments: '',
   toolingRequirements: '',
   materialRecommendation: '',
@@ -44,7 +43,7 @@ const emptyDecision: RdDecisionInput = {
   clarificationQuestion: '',
 }
 
-function OrderDetail({ order, planners, onUpdated }: { order: RdOrderDetail; planners: PlanningUser[]; onUpdated: (order: RdOrderDetail) => void }) {
+function OrderDetail({ order, onUpdated }: { order: RdOrderDetail; onUpdated: (order: RdOrderDetail) => void }) {
   const { showToast } = useToast()
   const [values, setValues] = useState(emptyDecision)
   const [fieldErrors, setFieldErrors] = useState<string[]>([])
@@ -58,7 +57,6 @@ function OrderDetail({ order, planners, onUpdated }: { order: RdOrderDetail; pla
 
   async function decide() {
     const missing = ['technicalComments'].filter((field) => !values[field as keyof RdDecisionInput].trim())
-    if (values.decision === 'APPROVED' && !values.planningUserAuthUserId) missing.push('planningUserAuthUserId')
     if (values.decision === 'CLARIFICATION_REQUESTED' && !values.clarificationQuestion.trim()) missing.push('clarificationQuestion')
     if (missing.length) {
       setFieldErrors(missing)
@@ -196,18 +194,6 @@ function OrderDetail({ order, planners, onUpdated }: { order: RdOrderDetail; pla
                   <option value="ON_HOLD">Place on hold</option>
                 </Select>
               </FormField>
-              {values.decision === 'APPROVED' ? (
-                <FormField label="Assign to Planning user" required className="wide" hint={!planners.length ? 'No active Planning users are available.' : undefined}>
-                  <Select value={values.planningUserAuthUserId} onChange={(event) => update('planningUserAuthUserId', event.target.value)} aria-invalid={fieldErrors.includes('planningUserAuthUserId')}>
-                    <option value="">Select an active Planning user</option>
-                    {planners.map((planner) => (
-                      <option key={planner.authUserId} value={planner.authUserId}>
-                        {planner.displayName} ({planner.email})
-                      </option>
-                    ))}
-                  </Select>
-                </FormField>
-              ) : null}
               <FormField label="Technical comments" required className="wide">
                 <TextArea
                   value={values.technicalComments}
@@ -264,7 +250,6 @@ export function RdWorkspace() {
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search.trim().toLowerCase())
   const [status, setStatus] = useState('All')
-  const [planners, setPlanners] = useState<PlanningUser[]>([])
 
   function refreshQueue() {
     return listRdOrders().then((items) => {
@@ -290,20 +275,6 @@ export function RdWorkspace() {
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [showToast])
-
-  useEffect(() => {
-    let cancelled = false
-    listPlanningUsers()
-      .then((items) => {
-        if (!cancelled) setPlanners(items)
-      })
-      .catch((error) => {
-        if (!cancelled) showToast({ title: 'Planning users unavailable', message: error instanceof Error ? error.message : undefined, tone: 'error' })
       })
     return () => {
       cancelled = true
@@ -386,7 +357,6 @@ export function RdWorkspace() {
       {detail ? (
         <OrderDetail
           order={detail}
-          planners={planners}
           onUpdated={() => {
             void refreshQueue()
           }}

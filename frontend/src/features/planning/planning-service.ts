@@ -21,7 +21,6 @@ export type PlanningAssessmentInput = {
   capacityStatus: 'PENDING' | 'AVAILABLE' | 'UNAVAILABLE'
   readinessStatus: 'PENDING' | 'READY' | 'BLOCKED'
   planningNotes: string
-  pressUserAuthUserId: string
 }
 
 export type PlanningOrderDetail = PlanningOrderSummary & {

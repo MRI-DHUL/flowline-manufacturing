@@ -153,7 +153,7 @@ export class PostgresCsrService extends PostgresCsrReadService implements CsrSer
          ) VALUES ($1, $2, 'ORDER_SUBMITTED', $3, 'R&D Review')`,
         [orderId, user.id, previousStatus],
       )
-      const notificationResult = await client.query<{
+      await client.query<{
         id: string
         order_id: string
         type: string
@@ -167,7 +167,7 @@ export class PostgresCsrService extends PostgresCsrReadService implements CsrSer
                    'Order ' || $2 || ' has been submitted for technical review.')
            RETURNING id, order_id, type, title, message, created_at
          ), recipient AS (
-           INSERT INTO flowline.notification_recipients (notification_id, recipient_auth_user_id)
+           INSERT INTO flowline.notification_recipients (notification_id, recipient_role_id)
            SELECT notification.id, $3
            FROM notification
            RETURNING notification_id
@@ -176,22 +176,9 @@ export class PostgresCsrService extends PostgresCsrReadService implements CsrSer
                 notification.title, notification.message, notification.created_at
          FROM notification
          JOIN recipient ON recipient.notification_id = notification.id`,
-        [orderId, order.order_number, order.owner_auth_user_id],
+        [orderId, order.order_number, rdRole.rows[0]?.id ?? null],
       )
       await client.query('COMMIT')
-      const notification = notificationResult.rows[0]
-      if (notification && order.owner_auth_user_id) {
-        this.notificationPublisher?.publish(order.owner_auth_user_id, {
-          id: notification.id,
-          orderId: notification.order_id,
-          orderNumber: order.order_number,
-          type: notification.type,
-          title: notification.title,
-          message: notification.message,
-          createdAt: notification.created_at,
-          readAt: null,
-        })
-      }
       return this.getOrder(user, orderId)
     } catch (error) {
       await client.query('ROLLBACK')
@@ -324,15 +311,14 @@ export class PostgresCsrService extends PostgresCsrReadService implements CsrSer
          VALUES ($1, $2, 'CLARIFICATION_RESPONDED', jsonb_build_object('clarificationId', $3::text))`,
         [orderId, user.id, clarificationId],
       )
-      let notificationId: string | null = null
       if (request.stage === 'R&D') {
         const rdRole = await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'R&D'`)
         await client.query(
           `UPDATE flowline.orders
-           SET status = 'R&D Review', stage = 'R&D', owner_role_id = $2,
-               owner_auth_user_id = $3, version = version + 1
+             SET status = 'R&D Review', stage = 'R&D', owner_role_id = $2,
+               owner_auth_user_id = NULL, version = version + 1
            WHERE id = $1`,
-          [orderId, rdRole.rows[0]?.id ?? null, request.requested_by_auth_user_id],
+            [orderId, rdRole.rows[0]?.id ?? null],
         )
         await client.query(
           `INSERT INTO flowline.audit_events (
@@ -348,26 +334,13 @@ export class PostgresCsrService extends PostgresCsrReadService implements CsrSer
                      'Order ' || $2 || ' has been returned for R&D review.')
              RETURNING id
            )
-           INSERT INTO flowline.notification_recipients (notification_id, recipient_auth_user_id)
+           INSERT INTO flowline.notification_recipients (notification_id, recipient_role_id)
            SELECT id, $3 FROM notification
            RETURNING notification_id AS id`,
-          [orderId, request.order_number, request.requested_by_auth_user_id],
+          [orderId, request.order_number, rdRole.rows[0]?.id ?? null],
         )
-        notificationId = notification.rows[0]?.id ?? null
       }
       await client.query('COMMIT')
-      if (notificationId) {
-        this.notificationPublisher?.publish(request.requested_by_auth_user_id, {
-          id: notificationId,
-          orderId,
-          orderNumber: request.order_number,
-          type: 'CSR_CLARIFICATION_RESPONDED',
-          title: 'Clarification response received',
-          message: `Order ${request.order_number} has been returned for R&D review.`,
-          createdAt: new Date(),
-          readAt: null,
-        })
-      }
       return this.getOrder(user, orderId)
     } catch (error) {
       await client.query('ROLLBACK')
@@ -458,7 +431,6 @@ export class PostgresCsrService extends PostgresCsrReadService implements CsrSer
     if (!order.material) missing.push('material')
     if (!order.requested_quantity || Number(order.requested_quantity) <= 0) missing.push('requestedQuantity')
     if (!order.requested_delivery_date) missing.push('requestedDeliveryDate')
-    if (!order.owner_auth_user_id) missing.push('assignedReviewerAuthUserId')
     return missing
   }
 }

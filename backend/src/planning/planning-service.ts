@@ -81,10 +81,10 @@ export class PostgresPlanningService implements PlanningService {
     ensurePlanning(user)
     const result = await this.pool.query<OrderRow>(
       `SELECT * FROM flowline.orders
-       WHERE owner_auth_user_id = $1 AND stage = 'Planning' AND status = 'Planning Review'
+      WHERE owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'PLANNING') AND stage = 'Planning' AND status = 'Planning Review'
        ORDER BY CASE priority WHEN 'High' THEN 0 ELSE 1 END, requested_delivery_date, updated_at DESC
        LIMIT 100`,
-      [user.id],
+      [],
     )
     return result.rows.map(toSummary)
   }
@@ -117,7 +117,7 @@ export class PostgresPlanningService implements PlanningService {
     const orderResult = await this.pool.query<OrderRow>(
       `SELECT * FROM flowline.orders
        WHERE id = $1 AND (
-         owner_auth_user_id = $2
+         owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'PLANNING')
          OR EXISTS (
            SELECT 1 FROM flowline.planning_reviews
            WHERE order_id = flowline.orders.id AND planner_auth_user_id = $2
@@ -148,7 +148,7 @@ export class PostgresPlanningService implements PlanningService {
          FROM flowline.planning_reviews
          WHERE order_id = $1 AND planner_auth_user_id = $2
          ORDER BY updated_at DESC LIMIT 1`,
-        [orderId, user.id],
+        [orderId],
       ),
       this.pool.query<{
         decision: string
@@ -231,7 +231,6 @@ export class PostgresPlanningService implements PlanningService {
       if (!input.plannedProductionDate) fields.push('plannedProductionDate')
       if (input.capacityStatus !== 'AVAILABLE') fields.push('capacityStatus')
       if (input.readinessStatus !== 'READY') fields.push('readinessStatus')
-      if (!input.pressUserAuthUserId) fields.push('pressUserAuthUserId')
     }
     if (fields.length) {
       throw new PlanningError(
@@ -261,7 +260,7 @@ export class PostgresPlanningService implements PlanningService {
       input.capacityStatus,
       input.readinessStatus,
       input.planningNotes?.trim() || null,
-      input.pressUserAuthUserId || null,
+      null,
     ]
     if (existing.rows[0]) {
       await client.query(
@@ -293,9 +292,9 @@ export class PostgresPlanningService implements PlanningService {
       const liveNotifications: Array<{ userId: string; item: NotificationItem }> = []
       const order = await client.query<{ id: string; order_number: string; created_by_auth_user_id: string }>(
         `SELECT id, order_number, created_by_auth_user_id FROM flowline.orders
-         WHERE id = $1 AND owner_auth_user_id = $2 AND stage = 'Planning' AND status = 'Planning Review'
+         WHERE id = $1 AND owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'PLANNING') AND stage = 'Planning' AND status = 'Planning Review'
          FOR UPDATE`,
-        [orderId, user.id],
+        [orderId],
       )
       if (!order.rows[0]) throw new PlanningError(404, 'ORDER_NOT_FOUND', 'Planning order not found or already released.')
       await this.persistAssessment(client, user, orderId, input)
@@ -364,47 +363,38 @@ export class PostgresPlanningService implements PlanningService {
       await client.query('BEGIN')
       const orderResult = await client.query<OrderRow>(
         `SELECT * FROM flowline.orders
-         WHERE id = $1 AND owner_auth_user_id = $2 AND stage = 'Planning' AND status = 'Planning Review'
+         WHERE id = $1 AND owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'PLANNING') AND stage = 'Planning' AND status = 'Planning Review'
          FOR UPDATE`,
         [orderId, user.id],
       )
       const order = orderResult.rows[0]
       if (!order) throw new PlanningError(404, 'ORDER_NOT_FOUND', 'Planning order not found or already released.')
 
-      const [line, pressUser, pressRole] = await Promise.all([
+      const [line, pressRole] = await Promise.all([
         client.query<{ id: string }>(`SELECT id FROM flowline.production_lines WHERE id = $1 AND active = true`, [input.productionLineId]),
-        client.query<{ auth_user_id: string }>(
-          `SELECT profile.auth_user_id
-           FROM flowline.user_profiles AS profile
-           JOIN flowline.user_roles AS user_role ON user_role.user_profile_id = profile.id
-           JOIN flowline.roles AS role ON role.id = user_role.role_id
-           WHERE profile.auth_user_id = $1 AND profile.status = 'ACTIVE' AND role.code = 'PRESS'`,
-          [input.pressUserAuthUserId],
-        ),
         client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'PRESS'`),
       ])
       if (!line.rows[0]) throw new PlanningError(422, 'INVALID_LINE', 'Select an active production line.', ['productionLineId'])
-      if (!pressUser.rows[0]) throw new PlanningError(422, 'INVALID_PRESS_USER', 'Select an active Press user.', ['pressUserAuthUserId'])
       await this.persistAssessment(client, user, orderId, input)
       await client.query(
         `INSERT INTO flowline.production_runs (
            order_id, production_line_id, operator_auth_user_id, status, planned_quantity
          ) VALUES ($1, $2, $3, 'SCHEDULED', $4)`,
-        [orderId, input.productionLineId, input.pressUserAuthUserId, order.requested_quantity],
+        [orderId, input.productionLineId, null, order.requested_quantity],
       )
       await client.query(
         `UPDATE flowline.orders
          SET status = 'Scheduled', stage = 'Press', owner_role_id = $2,
-             owner_auth_user_id = $3, version = version + 1
+             owner_auth_user_id = NULL, version = version + 1
          WHERE id = $1`,
-        [orderId, pressRole.rows[0]?.id ?? null, input.pressUserAuthUserId],
+        [orderId, pressRole.rows[0]?.id ?? null],
       )
       await client.query(
         `INSERT INTO flowline.audit_events (
            order_id, actor_auth_user_id, action, previous_status, new_status, reason, details
          ) VALUES ($1, $2, 'PLANNING_RELEASED', 'Planning Review', 'Scheduled', $3,
-           jsonb_build_object('productionLineId', $4::text, 'pressUserAuthUserId', $5::text))`,
-        [orderId, user.id, input.planningNotes?.trim() || null, input.productionLineId, input.pressUserAuthUserId],
+            jsonb_build_object('productionLineId', $4::text))`,
+          [orderId, user.id, input.planningNotes?.trim() || null, input.productionLineId],
       )
       const notification = await client.query<{ id: string }>(
         `INSERT INTO flowline.notifications (order_id, type, title, message)
@@ -412,23 +402,11 @@ export class PostgresPlanningService implements PlanningService {
         [orderId, `Order ${order.order_number} released to Press`, `Production is scheduled for ${input.plannedProductionDate}.`],
       )
       await client.query(
-        `INSERT INTO flowline.notification_recipients (notification_id, recipient_auth_user_id)
+        `INSERT INTO flowline.notification_recipients (notification_id, recipient_role_id)
          VALUES ($1, $2)`,
-        [notification.rows[0]?.id, input.pressUserAuthUserId],
+        [notification.rows[0]?.id, pressRole.rows[0]?.id],
       )
       await client.query('COMMIT')
-      if (notification.rows[0]) {
-        this.notificationPublisher?.publish(input.pressUserAuthUserId!, {
-          id: notification.rows[0].id,
-          orderId,
-          orderNumber: order.order_number,
-          type: 'PLANNING_RELEASED',
-          title: `Order ${order.order_number} released to Press`,
-          message: `Production is scheduled for ${input.plannedProductionDate}.`,
-          createdAt: new Date(),
-          readAt: null,
-        })
-      }
       return this.getOrder(user, orderId)
     } catch (error) {
       await client.query('ROLLBACK')
@@ -445,7 +423,7 @@ export class PostgresPlanningService implements PlanningService {
        FROM flowline.attachments AS attachment
        JOIN flowline.orders AS orders ON orders.id = attachment.order_id
        WHERE attachment.id = $1 AND attachment.order_id = $2 AND (
-         orders.owner_auth_user_id = $3
+        orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'PLANNING')
          OR EXISTS (
            SELECT 1 FROM flowline.planning_reviews
            WHERE order_id = orders.id AND planner_auth_user_id = $3

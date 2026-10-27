@@ -12,11 +12,11 @@ type AuthLayoutProps = {
 export function AuthLayout({ eyebrow, title, description, children, footer }: AuthLayoutProps) {
   return (
     <main className="auth-shell">
-      <section className="auth-context" aria-labelledby="flowline-brand">
+      <section className="auth-context" aria-labelledby="five-star-brand">
         <div className="brand-lockup">
-          <img className="brand-logo" src="/flowline-mark.svg" alt="" />
+          <img className="brand-logo" src="/5star-mark.svg" alt="" />
           <span>
-            <strong id="flowline-brand">Flowline</strong>
+            <strong id="five-star-brand">5Star</strong>
             <small>Manufacturing orders</small>
           </span>
         </div>
@@ -34,9 +34,9 @@ export function AuthLayout({ eyebrow, title, description, children, footer }: Au
       </section>
 
       <section className="auth-panel">
-        <div className="mobile-brand" aria-label="Flowline manufacturing orders">
-          <img className="brand-logo" src="/flowline-mark.svg" alt="" />
-          <strong>Flowline</strong>
+        <div className="mobile-brand" aria-label="5Star manufacturing orders">
+          <img className="brand-logo" src="/5star-mark.svg" alt="" />
+          <strong>5Star</strong>
         </div>
 
         <div className="auth-form-wrap">

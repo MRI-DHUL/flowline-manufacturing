@@ -18,7 +18,6 @@ const emptyAssessment: PlanningAssessmentInput = {
   capacityStatus: 'PENDING',
   readinessStatus: 'PENDING',
   planningNotes: '',
-  pressUserAuthUserId: '',
 }
 
 function formatDate(value: string | null) {
@@ -38,7 +37,6 @@ function detailValues(order: PlanningOrderDetail): PlanningAssessmentInput {
     capacityStatus: order.assessment.capacityStatus,
     readinessStatus: order.assessment.readinessStatus,
     planningNotes: order.assessment.planningNotes ?? '',
-    pressUserAuthUserId: order.assessment.pressUserAuthUserId ?? '',
   }
 }
 
@@ -209,16 +207,6 @@ function PlanningDetail({ order, resources, onSaved, onReleased }: { order: Plan
             </div>
           ) : null}
           <div className="planning-form-grid">
-            <FormField label="Assign to Press user on completion" required className="wide" hint="The completed plan is sent only to this active Press user.">
-              <Select value={values.pressUserAuthUserId} onChange={(event) => update('pressUserAuthUserId', event.target.value)} aria-invalid={fieldErrors.includes('pressUserAuthUserId')}>
-                <option value="">Select active Press user</option>
-                {resources.pressUsers.map((pressUser) => (
-                  <option key={pressUser.authUserId} value={pressUser.authUserId}>
-                    {pressUser.displayName} ({pressUser.email})
-                  </option>
-                ))}
-              </Select>
-            </FormField>
             <FormField label="Material status" required>
               <Select value={values.materialStatus} onChange={(event) => update('materialStatus', event.target.value as PlanningAssessmentInput['materialStatus'])} aria-invalid={fieldErrors.includes('materialStatus')}>
                 <option value="PENDING">Pending confirmation</option>

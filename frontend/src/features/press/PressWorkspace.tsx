@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleAlert, Factory, Pause, Play, RefreshCw, Send, ShieldAlert } from 'lucide-react'
+import { CheckCircle2, Factory, Pause, Play, RefreshCw, Send, ShieldAlert } from 'lucide-react'
 import { useDeferredValue, useEffect, useState } from 'react'
 import { useToast } from '../../components/toast/useToast'
 import { Button, Card, FormField, Select, TextArea, TextInput } from '../../components/ui'
@@ -9,14 +9,13 @@ import {
   completePressOrder,
   getPressOrder,
   listPressOrders,
-  listShippingUsers,
   pausePressOrder,
   PressRequestError,
   reportProductionIssue,
   resolveProductionIssue,
   startPressOrder,
 } from './press-service'
-import type { PressOrderDetail, PressOrderSummary, ShippingUser } from './press-service'
+import type { PressOrderDetail, PressOrderSummary } from './press-service'
 import './press-workspace.css'
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -40,13 +39,13 @@ function formatDateTime(value: string | null) {
   return Number.isNaN(date.getTime()) ? 'Not set' : dateTimeFormatter.format(date)
 }
 
-function PressDetail({ order, shippingUsers, onUpdated, onCompleted }: { order: PressOrderDetail; shippingUsers: ShippingUser[]; onUpdated: (order: PressOrderDetail) => void; onCompleted: (orderId: string) => void }) {
+function PressDetail({ order, onUpdated, onCompleted }: { order: PressOrderDetail; onUpdated: (order: PressOrderDetail) => void; onCompleted: (orderId: string) => void }) {
   const { showToast } = useToast()
   const [busy, setBusy] = useState(false)
   const [pauseReason, setPauseReason] = useState('')
   const [issue, setIssue] = useState({ category: '', notes: '', correctiveAction: '' })
   const [rework, setRework] = useState({ action: 'RESUME' as 'RESUME' | 'REVIEW', resolution: '' })
-  const [completion, setCompletion] = useState({ goodQuantity: '', wasteQuantity: '', notes: '', shippingUserAuthUserId: '' })
+  const [completion, setCompletion] = useState({ goodQuantity: '', notes: '' })
   const [fieldErrors, setFieldErrors] = useState<string[]>([])
 
   async function runAction(action: 'accept' | 'start' | 'pause') {
@@ -88,9 +87,7 @@ function PressDetail({ order, shippingUsers, onUpdated, onCompleted }: { order: 
     try {
       await completePressOrder(order.id, {
         goodQuantity: Number(completion.goodQuantity),
-        wasteQuantity: Number(completion.wasteQuantity),
         notes: completion.notes,
-        shippingUserAuthUserId: completion.shippingUserAuthUserId,
       })
       showToast({
         title: 'Production completed',
@@ -125,7 +122,6 @@ function PressDetail({ order, shippingUsers, onUpdated, onCompleted }: { order: 
   const canStart = ['ACCEPTED', 'PAUSED', 'ISSUE'].includes(order.runStatus)
   const canPause = order.runStatus === 'IN_PRODUCTION'
   const canComplete = order.runStatus === 'IN_PRODUCTION'
-  const shippingReady = shippingUsers.length > 0
 
   return (
     <Card className="press-detail">
@@ -301,30 +297,10 @@ function PressDetail({ order, shippingUsers, onUpdated, onCompleted }: { order: 
               <Factory size={20} />
               <div>
                 <strong>Complete production & send to Shipping</strong>
-                <small>Completion is blocked until quantities and a Shipping assignee are recorded.</small>
+                <small>Completion is blocked until production quantities are recorded.</small>
               </div>
             </header>
-            {!shippingReady ? (
-              <div className="press-resource-warning">
-                <CircleAlert size={17} />
-                <span>No active Shipping users are available.</span>
-              </div>
-            ) : null}
             <div className="press-form-grid">
-              <FormField label="Assign to Shipping user on completion" required className="wide" hint="The completed order is sent only to this active Shipping user.">
-                <Select
-                  value={completion.shippingUserAuthUserId}
-                  onChange={(event) => setCompletion((current) => ({ ...current, shippingUserAuthUserId: event.target.value }))}
-                  aria-invalid={fieldErrors.includes('shippingUserAuthUserId')}
-                >
-                  <option value="">Select active Shipping user</option>
-                  {shippingUsers.map((user) => (
-                    <option key={user.authUserId} value={user.authUserId}>
-                      {user.displayName} ({user.email})
-                    </option>
-                  ))}
-                </Select>
-              </FormField>
               <FormField label="Good quantity" required>
                 <TextInput
                   type="number"
@@ -335,22 +311,12 @@ function PressDetail({ order, shippingUsers, onUpdated, onCompleted }: { order: 
                   aria-invalid={fieldErrors.includes('goodQuantity')}
                 />
               </FormField>
-              <FormField label="Waste quantity" required>
-                <TextInput
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  value={completion.wasteQuantity}
-                  onChange={(event) => setCompletion((current) => ({ ...current, wasteQuantity: event.target.value }))}
-                  aria-invalid={fieldErrors.includes('wasteQuantity')}
-                />
-              </FormField>
               <FormField label="Completion notes" className="wide">
                 <TextArea value={completion.notes} onChange={(event) => setCompletion((current) => ({ ...current, notes: event.target.value }))} />
               </FormField>
             </div>
             <footer>
-              <Button variant="primary" type="button" disabled={busy || !shippingReady} onClick={() => void complete()}>
+              <Button variant="primary" type="button" disabled={busy} onClick={() => void complete()}>
                 <Send size={16} />
                 Complete production & send to Shipping
               </Button>
@@ -365,7 +331,6 @@ function PressDetail({ order, shippingUsers, onUpdated, onCompleted }: { order: 
 export function PressWorkspace() {
   const { showToast } = useToast()
   const [orders, setOrders] = useState<PressOrderSummary[]>([])
-  const [shippingUsers, setShippingUsers] = useState<ShippingUser[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detail, setDetail] = useState<PressOrderDetail | null>(null)
   const [search, setSearch] = useState('')
@@ -375,11 +340,10 @@ export function PressWorkspace() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([listPressOrders(), listShippingUsers()])
-      .then(([nextOrders, users]) => {
+    listPressOrders()
+      .then((nextOrders) => {
         if (cancelled) return
         setOrders(nextOrders)
-        setShippingUsers(users)
         setSelectedId(nextOrders[0]?.id ?? null)
         if (!nextOrders.length) setDetailLoading(false)
       })
@@ -486,7 +450,7 @@ export function PressWorkspace() {
           <strong>Loading production job</strong>
         </Card>
       ) : detail ? (
-        <PressDetail key={`${detail.id}-${detail.runStatus}`} order={detail} shippingUsers={shippingUsers} onUpdated={updateDetail} onCompleted={removeCompleted} />
+        <PressDetail key={`${detail.id}-${detail.runStatus}`} order={detail} onUpdated={updateDetail} onCompleted={removeCompleted} />
       ) : (
         <Card className="press-detail press-detail-empty">
           <Factory size={28} />

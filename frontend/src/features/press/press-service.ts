@@ -102,6 +102,6 @@ export function reportProductionIssue(orderId: string, input: { category: string
 export function resolveProductionIssue(orderId: string, input: { action: 'RESUME' | 'REVIEW'; resolution: string }) {
   return orderAction(orderId, 'rework/resolve', input)
 }
-export function completePressOrder(orderId: string, input: { goodQuantity: number; wasteQuantity: number; notes: string; shippingUserAuthUserId: string }) {
+export function completePressOrder(orderId: string, input: { goodQuantity: number; notes: string }) {
   return orderAction(orderId, 'complete', input)
 }

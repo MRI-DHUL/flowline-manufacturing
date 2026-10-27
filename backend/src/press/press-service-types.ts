@@ -41,9 +41,8 @@ export type PressOrderDetail = PressOrderSummary & {
 
 export type PressCompletionInput = {
   goodQuantity: number
-  wasteQuantity: number
+  wasteQuantity?: number
   notes?: string | null
-  shippingUserAuthUserId?: string | null
 }
 
 export interface PressService {

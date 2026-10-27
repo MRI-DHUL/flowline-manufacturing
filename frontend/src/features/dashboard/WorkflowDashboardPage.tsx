@@ -90,7 +90,7 @@ export function WorkflowDashboardPage() {
 
   useEffect(() => {
     const previousTitle = document.title
-    document.title = 'Flowline | Dashboard'
+    document.title = '5Star | Dashboard'
     document.documentElement.classList.add('workflow-scrollbar-hidden')
     return () => {
       document.title = previousTitle
@@ -267,9 +267,9 @@ export function WorkflowDashboardPage() {
     <div className="workflow-dashboard-page">
       <header className="workflow-header">
         <div className="workflow-brand">
-          <img src="/flowline-mark.svg" alt="" />
+          <img src="/5star-mark.svg" alt="" />
           <span>
-            <strong>Flowline</strong>
+            <strong>5Star</strong>
             <small>Manufacturing orders</small>
           </span>
         </div>

@@ -50,7 +50,7 @@ export interface ShippingService {
     },
   ): Promise<ShippingOrderDetail>
   uploadProof(user: AuthUser, orderId: string, file: { fileName: string; mediaType: string; content: Buffer }): Promise<ShippingOrderDetail>
-  handoffToManager(user: AuthUser, orderId: string, input: { managerUserAuthUserId: string }): Promise<ShippingOrderDetail>
+  handoffToManager(user: AuthUser, orderId: string): Promise<ShippingOrderDetail>
   reportDeliveryIssue(user: AuthUser, orderId: string, input: { category: string; notes: string; managerUserAuthUserId: string }): Promise<ShippingOrderDetail>
   confirmDelivery(user: AuthUser, orderId: string, input: { actualDeliveryAt: string; receivedBy: string }): Promise<ShippingOrderDetail>
 }
@@ -143,10 +143,10 @@ export class PostgresShippingService implements ShippingService {
     ensureShipping(user)
     const result = await this.pool.query<ShippingRow>(
       `${shippingSelect}
-      WHERE orders.owner_auth_user_id = $1 AND orders.stage = 'Shipping'
+      WHERE orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'SHIPPING') AND orders.stage = 'Shipping'
         AND orders.status IN ('Ready to Ship', 'Dispatched', 'On Hold')
       ORDER BY CASE orders.priority WHEN 'High' THEN 0 ELSE 1 END, orders.requested_delivery_date, orders.updated_at DESC`,
-      [user.id],
+      [],
     )
     return result.rows.map(summary)
   }
@@ -164,18 +164,18 @@ export class PostgresShippingService implements ShippingService {
     return result.rows.map((item) => ({ authUserId: item.auth_user_id, displayName: item.display_name, email: item.email }))
   }
 
-  async getOrder(user: AuthUser, orderId: string) {
+  async getOrder(user: AuthUser, orderId: string, internalRead = false) {
     ensureShipping(user)
     const result = await this.pool.query<ShippingRow>(
       `${shippingSelect}
-      WHERE orders.id = $1 AND (
-        orders.owner_auth_user_id = $2
+      WHERE orders.id = $1 ${internalRead ? '' : `AND (
+        orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'SHIPPING')
         OR EXISTS (
           SELECT 1 FROM flowline.delivery_issues issue
           WHERE issue.order_id = orders.id AND issue.reported_by_auth_user_id = $2
         )
-      )`,
-      [orderId, user.id],
+      )`}`,
+      internalRead ? [orderId] : [orderId, user.id],
     )
     const row = result.rows[0]
     if (!row) throw new ShippingError(404, 'ORDER_NOT_FOUND', 'Shipping order not found.')
@@ -222,7 +222,7 @@ export class PostgresShippingService implements ShippingService {
   private async locked(client: pg.PoolClient, user: AuthUser, orderId: string, shipmentStatuses: string[]) {
     const result = await client.query<ShippingRow>(
       `${shippingSelect}
-      WHERE orders.id = $1 AND orders.owner_auth_user_id = $2 AND orders.stage = 'Shipping'
+      WHERE orders.id = $1 AND orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'SHIPPING') AND orders.stage = 'Shipping'
         AND shipment.status = ANY($3::text[]) FOR UPDATE OF orders, shipment`,
       [orderId, user.id, shipmentStatuses],
     )
@@ -381,7 +381,7 @@ export class PostgresShippingService implements ShippingService {
         readAt: null,
       }
       this.notificationPublisher?.publish(input.managerUserAuthUserId, notificationItem)
-      return this.getOrder(user, orderId)
+      return this.getOrder(user, orderId, true)
     } catch (error) {
       await client.query('ROLLBACK')
       throw error
@@ -390,28 +390,18 @@ export class PostgresShippingService implements ShippingService {
     }
   }
 
-  async handoffToManager(user: AuthUser, orderId: string, input: { managerUserAuthUserId: string }) {
+  async handoffToManager(user: AuthUser, orderId: string) {
     ensureShipping(user)
-    if (!input.managerUserAuthUserId) throw new ShippingError(422, 'MANAGER_REQUIRED', 'Select a Manager for this handoff.', ['managerUserAuthUserId'])
     const client = await this.pool.connect()
     try {
       await client.query('BEGIN')
       const row = await this.locked(client, user, orderId, ['DISPATCHED'])
-      const manager = await client.query<{ auth_user_id: string }>(
-        `SELECT profile.auth_user_id
-           FROM flowline.user_profiles profile
-           JOIN flowline.user_roles user_role ON user_role.user_profile_id = profile.id
-           JOIN flowline.roles role ON role.id = user_role.role_id
-          WHERE profile.status = 'ACTIVE' AND role.code = 'MANAGER'
-            AND profile.auth_user_id = $1`,
-        [input.managerUserAuthUserId],
-      )
-      if (!manager.rows[0]) throw new ShippingError(422, 'INVALID_MANAGER', 'Select an active Manager for this handoff.', ['managerUserAuthUserId'])
       const managerRole = await client.query<{ id: string }>(`SELECT id FROM flowline.roles WHERE code = 'MANAGER'`)
-      await client.query(`UPDATE flowline.orders SET status='Manager Review', owner_role_id=$2, owner_auth_user_id=$3, version=version+1 WHERE id=$1`, [
+      const managerRoleId = managerRole.rows[0]?.id
+      if (!managerRoleId) throw new ShippingError(500, 'MANAGER_ROLE_MISSING', 'The Manager role is not configured.')
+      await client.query(`UPDATE flowline.orders SET status='Manager Review', owner_role_id=$2, owner_auth_user_id=NULL, version=version+1 WHERE id=$1`, [
         orderId,
-        managerRole.rows[0]?.id ?? null,
-        input.managerUserAuthUserId,
+        managerRoleId,
       ])
       const notificationResult = await client.query<{ id: string; created_at: Date }>(
         `INSERT INTO flowline.notifications (order_id, type, title, message)
@@ -421,27 +411,16 @@ export class PostgresShippingService implements ShippingService {
       )
       const notification = notificationResult.rows[0]
       if (!notification) throw new Error('Shipping handoff notification insert did not return a row')
-      await client.query(`INSERT INTO flowline.notification_recipients (notification_id, recipient_auth_user_id) VALUES ($1, $2)`, [notification.id, input.managerUserAuthUserId])
+      await client.query(`INSERT INTO flowline.notification_recipients (notification_id, recipient_role_id) VALUES ($1, $2)`, [notification.id, managerRoleId])
       await client.query(`INSERT INTO flowline.audit_events (order_id,actor_auth_user_id,action,previous_status,new_status,reason,details) VALUES ($1,$2,'SHIPPING_TO_MANAGER_HANDOFF',$3,'Manager Review',$4,$5)`, [
         orderId,
         user.id,
         row.status,
         'Shipping handoff for final delivery confirmation',
-        JSON.stringify({ managerUserAuthUserId: input.managerUserAuthUserId }),
+        JSON.stringify({ managerRole: 'MANAGER' }),
       ])
       await client.query('COMMIT')
-      const notificationItem: NotificationItem = {
-        id: notification.id,
-        orderId,
-        orderNumber: row.order_number,
-        type: 'SHIPPING_MANAGER_HANDOFF',
-        title: `Delivery handoff for ${row.order_number}`,
-        message: 'Shipping has handed this delivery to you for final confirmation.',
-        createdAt: notification.created_at,
-        readAt: null,
-      }
-      this.notificationPublisher?.publish(input.managerUserAuthUserId, notificationItem)
-      return this.getOrder(user, orderId)
+      return this.getOrder(user, orderId, true)
     } catch (error) {
       await client.query('ROLLBACK')
       throw error

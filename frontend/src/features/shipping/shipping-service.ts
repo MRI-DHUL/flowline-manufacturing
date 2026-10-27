@@ -84,8 +84,8 @@ export function dispatchShippingOrder(
 export function reportDeliveryIssue(orderId: string, input: { category: string; notes: string; managerUserAuthUserId: string }) {
   return action(orderId, 'delivery-issues', input)
 }
-export function handoffToManager(orderId: string, managerUserAuthUserId: string) {
-  return action(orderId, 'manager-handoff', { managerUserAuthUserId })
+export function handoffToManager(orderId: string) {
+  return action(orderId, 'manager-handoff')
 }
 export function confirmShippingDelivery(orderId: string, input: { actualDeliveryAt: string; receivedBy: string }) {
   return action(orderId, 'confirm-delivery', input)

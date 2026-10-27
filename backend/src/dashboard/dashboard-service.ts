@@ -122,16 +122,16 @@ export class PostgresDashboardService implements DashboardService {
     const role = selectRole(user.roles)
     const stage = role === 'CSR' || role === 'MANAGER' || role === 'SYSTEM_ADMIN' ? null : stageByRole[role]
     const visibility = `
-      (($1 = 'MANAGER' AND orders.status = 'Manager Review' AND orders.owner_auth_user_id = $2)
+      (($1 = 'MANAGER' AND orders.status = 'Manager Review' AND (orders.owner_auth_user_id = $2 OR orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'MANAGER')))
       OR $1 = 'SYSTEM_ADMIN')
       OR ($1 = 'CSR' AND orders.created_by_auth_user_id = $2)
-      OR ($3::text IS NOT NULL AND orders.stage = $3 AND orders.owner_auth_user_id = $2)
+      OR ($3::text IS NOT NULL AND orders.stage = $3 AND (orders.owner_auth_user_id = $2 OR orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = $1)))
     `
     const deliveryVisibility = `
-      (($1 = 'MANAGER' AND orders.owner_auth_user_id = $2 AND orders.status IN ('Manager Review', 'Delivered'))
+      (($1 = 'MANAGER' AND (orders.owner_auth_user_id = $2 OR orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = 'MANAGER')) AND orders.status IN ('Manager Review', 'Delivered'))
       OR $1 = 'SYSTEM_ADMIN')
       OR ($1 = 'CSR' AND orders.created_by_auth_user_id = $2)
-      OR ($3::text IS NOT NULL AND orders.stage = $3 AND orders.owner_auth_user_id = $2)
+      OR ($3::text IS NOT NULL AND orders.stage = $3 AND (orders.owner_auth_user_id = $2 OR orders.owner_role_id = (SELECT id FROM flowline.roles WHERE code = $1)))
     `
 
     const [metricsResult, ordersResult, stagesResult, statusesResult, trendResult, deliveryResult] = await Promise.all([
