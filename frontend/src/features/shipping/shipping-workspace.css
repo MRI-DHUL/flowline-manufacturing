@@ -105,6 +105,15 @@
   align-items: end;
   gap: 10px;
 }
+.shipping-handoff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #cce2dc;
+}
 .shipping-files {
   display: grid;
   gap: 6px;
@@ -170,7 +179,8 @@
   }
   .shipping-summary,
   .shipping-grid,
-  .shipping-proof {
+  .shipping-proof,
+  .shipping-handoff {
     grid-template-columns: 1fr;
   }
   .shipping-grid .wide {

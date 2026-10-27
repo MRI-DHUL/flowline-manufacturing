@@ -19,6 +19,7 @@ const issueSchema = z.object({
   notes: z.string().trim().min(10).max(3000),
   managerUserAuthUserId: z.uuid(),
 })
+const managerHandoffSchema = z.object({ managerUserAuthUserId: z.uuid() })
 const deliverySchema = z.object({ actualDeliveryAt: z.iso.datetime(), receivedBy: z.string().trim().min(1).max(300) })
 
 async function authenticatedUser(request: { cookies: Record<string, string | undefined> }, reply: FastifyReply, authService: AuthService): Promise<AuthUser | null> {
@@ -97,6 +98,16 @@ export function registerShippingRoutes(app: FastifyInstance, authService: AuthSe
       if (!user) return
       const { orderId } = orderParams.parse(request.params)
       return { order: await shippingService.reportDeliveryIssue(user, orderId, issueSchema.parse(request.body)) }
+    } catch (error) {
+      return sendShippingError(reply, error)
+    }
+  })
+  app.post('/api/v1/shipping/orders/:orderId/manager-handoff', async (request, reply) => {
+    try {
+      const user = await authenticatedUser(request, reply, authService)
+      if (!user) return
+      const { orderId } = orderParams.parse(request.params)
+      return { order: await shippingService.handoffToManager(user, orderId, managerHandoffSchema.parse(request.body)) }
     } catch (error) {
       return sendShippingError(reply, error)
     }

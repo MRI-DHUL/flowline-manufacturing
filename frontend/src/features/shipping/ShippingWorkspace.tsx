@@ -8,6 +8,7 @@ import {
   confirmShippingDelivery,
   dispatchShippingOrder,
   getShippingOrder,
+  handoffToManager,
   listShippingManagerUsers,
   listShippingOrders,
   reportDeliveryIssue,
@@ -39,6 +40,7 @@ function ShippingDetail({ order, managerUsers, onUpdated, onDelivered }: { order
   })
   const [delivery, setDelivery] = useState({ actualDeliveryAt: '', receivedBy: '' })
   const [issue, setIssue] = useState({ category: '', notes: '', managerUserAuthUserId: '' })
+  const [managerUserAuthUserId, setManagerUserAuthUserId] = useState('')
   const [proof, setProof] = useState<File | null>(null)
   async function execute(label: string, work: () => Promise<ShippingOrderDetail>, success: string) {
     setBusy(true)
@@ -200,6 +202,26 @@ function ShippingDetail({ order, managerUsers, onUpdated, onDelivered }: { order
                 <FormField label="Received by" required>
                   <TextInput value={delivery.receivedBy} onChange={(e) => setDelivery((v) => ({ ...v, receivedBy: e.target.value }))} />
                 </FormField>
+              </div>
+              <div className="shipping-handoff">
+                <FormField label="Manager handoff" required>
+                  <Select value={managerUserAuthUserId} onChange={(e) => setManagerUserAuthUserId(e.target.value)} aria-invalid={errors.includes('managerUserAuthUserId')}>
+                    <option value="">Select Manager</option>
+                    {managerUsers.length ? (
+                      managerUsers.map((user) => (
+                        <option key={user.authUserId} value={user.authUserId}>
+                          {user.displayName} ({user.email})
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No active Managers available</option>
+                    )}
+                  </Select>
+                </FormField>
+                <Button variant="primary" disabled={busy || !managerUserAuthUserId} onClick={() => void execute('Manager handoff blocked', () => handoffToManager(order.id, managerUserAuthUserId), 'Order handed off to Manager')}>
+                  <Send size={16} />
+                  Send to Manager
+                </Button>
               </div>
               <footer>
                 <Button
